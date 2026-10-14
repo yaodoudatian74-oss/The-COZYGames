@@ -323,6 +323,9 @@ export function showTitle(show) {
   if (show) {
     G.setModal(true);
     $('btn-continue').disabled = !hasSave();
+  } else {
+    // タイトルを閉じたら操作停止を解除する (つづきからは会話が無いため、ここで解除しないと動けない)
+    G.setModal(dialogOpen() || panelOpen());
   }
 }
 // 確認ダイアログが使えない環境(埋め込み表示など)では、そのまま進める

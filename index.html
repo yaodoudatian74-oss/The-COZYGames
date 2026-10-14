@@ -117,7 +117,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* スマホでは操作部品を小さくして景色を見やすくする */
 @media (max-width: 720px) {
-  #hud-top { top: calc(8px + env(safe-area-inset-top)); left: 8px; right: 120px; gap: 5px; }
+  #hud-top { top: calc(8px + env(safe-area-inset-top)); left: 8px; right: auto; width: calc(100vw - 140px); gap: 5px; }
   .chip { font-size: 11px; padding: 3px 9px; }
   #hud-goal-wrap { flex: 0 1 auto; max-width: 100%; padding: 3px 8px; border-radius: 10px; }
   #hud-goal { font-size: 10px; line-height: 1.35; }
