@@ -678,6 +678,10 @@ function toolModel(kind) {
     P(g, 'cyl', wood, { y: 0.3, sx: 0.03, sy: 0.6, sz: 0.03 });
     P(g, 'box', [210, 10, 60], { y: 0.62, sx: 0.5, sy: 0.07, sz: 0.09, rz: 0.2 });
     P(g, 'cone', [210, 10, 60], { x: 0.22, y: 0.56, sx: 0.06, sy: 0.14, sz: 0.06, rz: -Math.PI / 2 });
+  } else if (kind === 'shovel') {
+    P(g, 'cyl', wood, { y: 0.35, sx: 0.025, sy: 0.7, sz: 0.025 });
+    P(g, 'box', [210, 10, 70], { y: 0.04, sx: 0.2, sy: 0.04, sz: 0.26 });
+    P(g, 'box', [210, 10, 70], { y: 0.7, sx: 0.12, sy: 0.04, sz: 0.04 });
   } else if (kind === 'axe') {
     P(g, 'cyl', wood, { y: 0.3, sx: 0.03, sy: 0.6, sz: 0.03 });
     P(g, 'box', [210, 10, 70], { x: 0.1, y: 0.56, sx: 0.22, sy: 0.22, sz: 0.04 });

@@ -16,8 +16,9 @@ export const TOOLS = [
   { cat: 'tool', id: 'tool:2', name: 'ほうちょう', price: 500, tool: 'knife' },
   { cat: 'tool', id: 'tool:3', name: 'つるはし', price: 900, tool: 'pick' },
   { cat: 'tool', id: 'tool:4', name: 'おの', price: 700, tool: 'axe' },
+  { cat: 'tool', id: 'tool:5', name: 'スコップ', price: 300, tool: 'shovel' },
 ];
-export const TOOL = { rod: 'tool:0', net: 'tool:1', knife: 'tool:2', pick: 'tool:3', axe: 'tool:4' };
+export const TOOL = { rod: 'tool:0', net: 'tool:1', knife: 'tool:2', pick: 'tool:3', axe: 'tool:4', shovel: 'tool:5' };
 // 1年=4季節×30日。mask は「春夏秋冬」の在/不在を '1'/'0' で表す
 export const seasonOf = (day) => Math.floor(((day - 1) % 120) / 30);
 export const yearOf = (day) => Math.floor((day - 1) / 120) + 1;

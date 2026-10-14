@@ -44,7 +44,7 @@ export const rt = {
 
 export function newState() {
   return {
-    day: 1, hour: 6, money: 500, pocket: { [TOOL.rod]: 1, [TOOL.net]: 1, [TOOL.knife]: 1, [TOOL.pick]: 1, [TOOL.axe]: 1 }, disc: {},
+    day: 1, hour: 6, money: 500, pocket: { [TOOL.rod]: 1, [TOOL.net]: 1, [TOOL.knife]: 1, [TOOL.pick]: 1, [TOOL.axe]: 1, [TOOL.shovel]: 1 }, disc: {},
     gone: { trees: {}, rocks: {} }, stats: { fish: 0, bugs: 0, cooked: 0, crops: 0, sold: 0 },
     chapter: 0, shardReady: [false, false, false, false], shardTaken: [false, false, false, false],
     plots: [], house: [], friend: {}, talked: {}, pos: { x: -20, z: 23, ry: 0 }, inside: false, lighthouseOn: false,
@@ -498,6 +498,18 @@ function mineRock(i) {
   checkStory();
   hooks.refresh();
 }
+// 空の畑をスコップでならす (作物が植わっている畑は消せない)
+function levelPlot(i) {
+  if (!needTool(TOOL.shovel, 'スコップが ひつようです（モコのお店で かえます）')) return;
+  const p = rt.st.plots[i];
+  if (p.crop != null) return hooks.toast('作物を先にしゅうかくしてね');
+  rt.st.plots.splice(i, 1);
+  S.clearPlots();
+  refreshPlots();
+  se.dig();
+  hooks.toast('畑をならした');
+  hooks.refresh();
+}
 function chopTree(i) {
   if (!needTool(TOOL.axe, 'おのが ひつようです（モコのお店で かえます）')) return;
   const t = S.world.trees[i];
@@ -546,6 +558,9 @@ export function findTarget() {
   if (sh && Math.hypot(sh.x - s.pos.x, sh.z - s.pos.z) < 3.2) return { label: 'お店', act: openShop };
   const sign = { x: T.PLAZA.x + 3, z: T.PLAZA.z + 3 };
   if (Math.hypot(sign.x - s.pos.x, sign.z - s.pos.z) < 2.2) return { label: 'かんばん', act: () => hooks.say('かんばん', ['ひだまり島へ ようこそ。', 'あさの はじまりは、いつも まちの広場から。']) };
+  // 畑の真ん中に立ってスコップを持っていると「ならす」(空の畑のみ)
+  const here = plotAt(s.pos.x, s.pos.z, 0.9);
+  if (here >= 0 && hasTool(TOOL.shovel) && rt.st.plots[here].crop == null) return { label: 'ならす', act: () => levelPlot(here) };
   const pi = plotAt(f.x, f.z);
   if (pi >= 0) {
     const l = plotLabel(pi);
@@ -674,7 +689,7 @@ export function start(fresh) {
   rt.st = saved?.state ?? newState();
   if (!rt.st.plots) rt.st.plots = [];
   // 道具を持っていない古いセーブには、初期の道具を渡す
-  for (const k of [TOOL.rod, TOOL.net, TOOL.knife, TOOL.pick, TOOL.axe]) if (!rt.st.pocket[k]) rt.st.pocket[k] = 1;
+  for (const k of [TOOL.rod, TOOL.net, TOOL.knife, TOOL.pick, TOOL.axe, TOOL.shovel]) if (!rt.st.pocket[k]) rt.st.pocket[k] = 1;
   rt.st.gone ??= { trees: {}, rocks: {} };
   rt.st.stats.mined ??= 0;
   rt.st.stats.chopped ??= 0;

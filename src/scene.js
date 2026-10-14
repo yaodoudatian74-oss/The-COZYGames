@@ -497,6 +497,11 @@ export function resetWorldObjects() {
   shardMeshes.forEach((g) => { if (g) g.visible = false; });
   state.lighthouseOn = false;
 }
+// 畑の表示をすべて消す (畑の番号が詰まるので作り直すとき用)
+export function clearPlots() {
+  for (const g of plotGroups.values()) outdoor.remove(g);
+  plotGroups.clear();
+}
 export function setShardVisible(c, on) { if (shardMeshes[c]) shardMeshes[c].visible = on; }
 export function setLighthouse(on) { state.lighthouseOn = on; }
 
