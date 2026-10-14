@@ -274,7 +274,8 @@ function placeFurnitureHere() {
   const cells = cellsOf(pl.key, c.x, c.z, pl.rot);
   const ok = s.inside ? roomCellsOK(cells, occupancy()) : outdoorCellsOK(cells);
   if (!ok) return hooks.toast('ここには おけない');
-  const entry = { id: 'h' + rt.nextId++, key: pl.key, x: c.x, z: c.z, rot: pl.rot };
+  // 番号は再読み込み後も重ならないようにランダムにする (重なると、しまった家具が消えなくなる)
+  const entry = { id: 'h' + Math.random().toString(36).slice(2, 10), key: pl.key, x: c.x, z: c.z, rot: pl.rot };
   (s.inside ? s.house : s.outdoorFurn).push(entry);
   removeItem(pl.key, 1);
   S.placeFurniture(entry.id, entry, { fp: FURNITURE[Number(pl.key.split(':')[1])].fp, outdoor: !s.inside });
