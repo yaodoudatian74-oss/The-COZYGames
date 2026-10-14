@@ -82,7 +82,7 @@ function detailTexture() {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(HALF / 3, HALF / 3);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.anisotropy = 8;
   return t;
 }
 
@@ -473,7 +473,8 @@ function buildLights(sc) {
 // ---------- 初期化 ----------
 export function init(canvas) {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // 画面の細かさ (ピクセル密度) を上げて、スマホでもくっきり見せる。重い端末では上限で抑える
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.75));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
