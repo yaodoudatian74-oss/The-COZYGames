@@ -1,6 +1,6 @@
 // ゲームの進行とシステム: 時間・移動・釣り・虫取り・畑・料理・店・家具配置・住民・物語・保存
 import {
-  CHAPTERS, SHARD_NAMES, VILLAGERS, FISH, BUGS, DISHES, CROPS, FURNITURE, SEASON_NAMES, BUG_WINGS,
+  CHAPTERS, SHARD_NAMES, VILLAGERS, FISH, BUGS, DISHES, CROPS, FURNITURE, SEASON_NAMES, BUG_WINGS, TOOL,
   seasonOf, yearOf, dayInSeason, inSeason, infoOf, tagsOf,
 } from './data.js';
 import { loadSave, writeSave, clamp, angleLerp } from './util.js';
@@ -27,7 +27,7 @@ export const rt = {
 
 export function newState() {
   return {
-    day: 1, hour: 6, money: 500, pocket: {}, disc: {}, stats: { fish: 0, bugs: 0, cooked: 0, crops: 0, sold: 0 },
+    day: 1, hour: 6, money: 500, pocket: { [TOOL.rod]: 1, [TOOL.net]: 1, [TOOL.knife]: 1 }, disc: {}, stats: { fish: 0, bugs: 0, cooked: 0, crops: 0, sold: 0 },
     chapter: 0, shardReady: [false, false, false, false], shardTaken: [false, false, false, false],
     plots: [], house: [], friend: {}, talked: {}, pos: { x: -20, z: 23, ry: 0 }, inside: false, lighthouseOn: false,
   };
@@ -78,8 +78,16 @@ export function removeItem(key, n = 1) {
   if (p[key] <= 0) delete p[key];
 }
 
+export const hasTool = (k) => countOf(k) > 0;
+function needTool(k, msg) {
+  if (hasTool(k)) return true;
+  hooks.toast(msg);
+  return false;
+}
+
 export function buy(key) {
   const info = infoOf(key), s = rt.st;
+  if (info.cat === 'tool' && hasTool(key)) return hooks.toast('もう持っています');
   if (s.money < info.price) return hooks.toast('お金がたりないみたい');
   if (!addItem(key, 1)) return;
   s.money -= info.price;
@@ -89,6 +97,7 @@ export function buy(key) {
 }
 export function sell(key, n = 1) {
   const info = infoOf(key), s = rt.st;
+  if (info.cat === 'tool') return hooks.toast('道具は売れません');
   const have = countOf(key);
   if (!have) return;
   n = Math.min(n, have);
@@ -118,6 +127,7 @@ export function recipeIngredients(d) {
 export function cook(d) {
   const used = recipeIngredients(d);
   if (!used) return hooks.toast('材料がたりない');
+  if (!hasTool(TOOL.knife)) return hooks.toast('ほうちょうが ひつようです（モコのお店で かえます）');
   if (!canAdd(`dish:${d}`)) return hooks.toast('ポーチがいっぱいです');
   used.forEach((k) => removeItem(k, 1));
   addItem(`dish:${d}`, 1);
@@ -324,6 +334,7 @@ function pickFish(kind) {
   return pool[pool.length - 1];
 }
 function startFishing(kind) {
+  if (!needTool(TOOL.rod, 'つりざおが ひつようです（モコのお店で かえます）')) return;
   rt.fishing = { phase: 'wait', t: 0, wait: 2 + Math.random() * 3, kind };
   hooks.toast('つりを はじめた…（うきが沈んだら A！）');
 }
@@ -401,6 +412,7 @@ function updateBugs(dt) {
 }
 function bugAct(b) {
   const s = rt.st;
+  if (!needTool(TOOL.net, '虫あみが ひつようです（モコのお店で かえます）')) return;
   const ok = Math.random() < (b.info.fast ? 0.45 : 0.8);
   if (!ok) { b.flee = 2; return hooks.toast('にげられた…'); }
   if (!addItem(b.key, 1)) return;
@@ -451,7 +463,7 @@ export function findTarget() {
     const lx = s.pos.x - OFF.x, lz = s.pos.z - OFF.z;
     const fx = f.x - OFF.x, fz = f.z - OFF.z;
     if (Math.hypot(lx - 2, lz - 1.5) < 2.2) return { label: 'ねる', act: sleep };
-    if (Math.hypot(lx - 10.5, lz - 1.5) < 2.2) return { label: 'りょうり', act: () => hooks.open('cook') };
+    if (Math.hypot(lx - 10.5, lz - 1.5) < 2.2) return { label: 'りょうり', act: () => (hasTool(TOOL.knife) ? hooks.open('cook') : hooks.toast('ほうちょうが ひつようです（モコのお店で かえます）')) };
     if (lz > 6.8 && Math.abs(lx - 5.5) < 2.2) return { label: 'そとへ', act: exitHouse };
     if (s.house.some((e) => cellsOf(e.key, e.x, e.z, e.rot).some(([x, z]) => x === Math.floor(fx) && z === Math.floor(fz)))) {
       return { label: 'ひろう', act: pickupFurnitureHere };
@@ -585,6 +597,8 @@ export function start(fresh) {
   const saved = fresh ? null : loadSave();
   rt.st = saved?.state ?? newState();
   if (!rt.st.plots) rt.st.plots = [];
+  // 道具を持っていない古いセーブには、初期の道具を渡す
+  for (const k of [TOOL.rod, TOOL.net, TOOL.knife]) if (!rt.st.pocket[k]) rt.st.pocket[k] = 1;
   if (!rt.st.house) rt.st.house = [];
   rt.player = makePlayer({ outfit: [200, 60, 72], pants: [220, 30, 42], shoe: [24, 40, 32], hair: [24, 45, 36], hat: true });
   S.scene.add(rt.player.root);

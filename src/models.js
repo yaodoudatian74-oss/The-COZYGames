@@ -18,6 +18,7 @@ function geo(n) {
     ico1: () => new THREE.IcosahedronGeometry(1, 1),
     ico0: () => new THREE.IcosahedronGeometry(1, 0),
     disc: () => new THREE.CircleGeometry(1, 20),
+    tor: () => new THREE.TorusGeometry(1, 0.06, 8, 24),
   }[n];
   return (GEO[n] = make());
 }
@@ -661,6 +662,25 @@ export function roomWalls(w, d, wallCol, floorCol) {
 }
 
 // ---------- アイテムの3Dモデル (図鑑・店・ゴースト表示用) ----------
+// 道具の見本 (つりざお・虫あみ・ほうちょう)
+function toolModel(kind) {
+  const g = new THREE.Group();
+  const wood = [28, 50, 52];
+  if (kind === 'rod') {
+    P(g, 'cyl', wood, { y: 0.45, z: 0, sx: 0.025, sy: 0.9, sz: 0.025, rx: 0.5 });
+    P(g, 'cyl', [0, 0, 92], { y: 0.5, z: 0.25, sx: 0.006, sy: 0.7, sz: 0.006, rx: 0.2 });
+    P(g, 'sph', [350, 70, 60], { y: 0.14, z: 0.45, s: 0.05 });
+  } else if (kind === 'net') {
+    P(g, 'cyl', wood, { y: 0.35, sx: 0.03, sy: 0.7, sz: 0.03 });
+    P(g, 'tor', [0, 0, 90], { y: 0.78, sx: 0.28, sy: 0.28, sz: 0.28, rx: Math.PI / 2 });
+    P(g, 'sph', [200, 20, 92], { y: 0.78, sx: 0.26, sy: 0.04, sz: 0.26 });
+  } else {
+    P(g, 'box', [0, 0, 80], { y: 0.5, sx: 0.09, sy: 0.02, sz: 0.5 });
+    P(g, 'box', wood, { y: 0.14, sx: 0.1, sy: 0.12, sz: 0.2 });
+  }
+  return g;
+}
+
 export function itemModel(key) {
   const info = infoOf(key);
   switch (info.cat) {
@@ -669,6 +689,7 @@ export function itemModel(key) {
     case 'bug': return bugModel(info);
     case 'dish': return dishModel(info);
     case 'crop': return cropModel(info, 4);
+    case 'tool': return toolModel(info.tool);
     case 'seed': {
       // ふくろ入りのたね: 作物の色の粒を盛る
       const crop = CROPS[info.seedOf];

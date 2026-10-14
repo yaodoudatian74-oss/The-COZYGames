@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { itemModel } from './models.js';
 import {
-  FISH, BUGS, DISHES, CROPS, FURNITURE, CHAPTERS, SHARD_NAMES, VILLAGERS, describe, infoOf,
+  FISH, BUGS, DISHES, CROPS, FURNITURE, CHAPTERS, SHARD_NAMES, VILLAGERS, TOOLS, describe, infoOf,
 } from './data.js';
 import * as G from './game.js';
 import { setMuted, isMuted } from './audio.js';
@@ -274,7 +274,7 @@ function shopPanel(body) {
     // たね20種 (各作物の基本品種) と 家具500
     // 各作物の基本品種 (20種) のたね
     const seeds = CROPS.filter((_, i) => i % 20 === 0).map((c) => `seed:${c.kind * 20}`);
-    const list = [...seeds, ...FURNITURE.map((f) => f.id)];
+    const list = [...TOOLS.map((t) => t.id), ...seeds, ...FURNITURE.map((f) => f.id)];
     for (const k of list) {
       const info = infoOf(k);
       grid.append(h('button', { class: 'card', onclick: () => G.buy(k) }, thumb(k), h('div', { class: 'name' }, info.name),

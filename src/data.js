@@ -8,7 +8,14 @@
 import { rngFrom, pickOf } from './util.js';
 
 export const SEASON_NAMES = ['春', '夏', '秋', '冬'];
-export const CAT_NAME = { furn: '家具', fish: '魚', bug: '虫', dish: '料理', crop: '農作物', seed: 'たね' };
+export const CAT_NAME = { furn: '家具', fish: '魚', bug: '虫', dish: '料理', crop: '農作物', seed: 'たね', tool: '道具' };
+// 道具 (なくならず、売れない)
+export const TOOLS = [
+  { cat: 'tool', id: 'tool:0', name: 'つりざお', price: 800, tool: 'rod' },
+  { cat: 'tool', id: 'tool:1', name: '虫あみ', price: 600, tool: 'net' },
+  { cat: 'tool', id: 'tool:2', name: 'ほうちょう', price: 500, tool: 'knife' },
+];
+export const TOOL = { rod: 'tool:0', net: 'tool:1', knife: 'tool:2' };
 // 1年=4季節×30日。mask は「春夏秋冬」の在/不在を '1'/'0' で表す
 export const seasonOf = (day) => Math.floor(((day - 1) % 120) / 30);
 export const yearOf = (day) => Math.floor((day - 1) / 120) + 1;
@@ -162,6 +169,7 @@ export function infoOf(key) {
     case 'bug': return BUGS[i];
     case 'dish': return DISHES[i];
     case 'crop': return CROPS[i];
+    case 'tool': return TOOLS[i];
     case 'seed': {
       const c = CROPS[i];
       return { cat: 'seed', id: key, name: c.name + 'のたね', price: Math.round(c.price * 0.35), seedOf: i };
@@ -186,6 +194,7 @@ export function describe(info) {
     case 'dish': return `材料: ${info.tags.map((t) => ({ fish: '魚', bug: '虫', veg: '野菜', fruit: '果物', grain: '穀物', herb: 'ハーブ' })[t]).join('・')}。`;
     case 'crop': return `育つまで${info.growDays}日。${info.mask.split('').map((b, i) => (b === '1' ? '春夏秋冬'[i] : '')).join('')}に育てやすい。`;
     case 'furn': return `${info.fp[0]}×${info.fp[1]}マスを使う家具。`;
+    case 'tool': return '道具。なくならないし、売ることはできない。';
     default: return '';
   }
 }
