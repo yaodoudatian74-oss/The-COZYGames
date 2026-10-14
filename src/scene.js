@@ -167,7 +167,7 @@ function buildScatter(sc) {
     g.rotation.y = t.ry;
     g.scale.setScalar(t.s);
     sc.add(g);
-    world.trees.push({ x: t.x, z: t.z, kind: t.kind });
+    world.trees.push({ x: t.x, z: t.z, kind: t.kind, obj: g, hp: 3 });
   }
   for (const r of S.rocks) {
     const g = M.rockModel(rng);
@@ -175,7 +175,7 @@ function buildScatter(sc) {
     g.rotation.y = r.ry;
     g.scale.setScalar(r.s);
     sc.add(g);
-    world.rocks.push({ x: r.x, z: r.z });
+    world.rocks.push({ x: r.x, z: r.z, obj: g, hp: 3 });
   }
   // 草: 細長い三角形を大量にインスタンス化
   // 葉: 根元が広く、先がすぼまる湾曲した形 (5頂点・3段)

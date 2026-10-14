@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { itemModel } from './models.js';
 import {
-  FISH, BUGS, DISHES, CROPS, FURNITURE, CHAPTERS, SHARD_NAMES, VILLAGERS, TOOLS, describe, infoOf,
+  FISH, BUGS, DISHES, CROPS, FURNITURE, CHAPTERS, SHARD_NAMES, VILLAGERS, TOOLS, ORES, WOODS, describe, infoOf,
 } from './data.js';
 import * as G from './game.js';
 import { setMuted, isMuted } from './audio.js';
@@ -200,7 +200,7 @@ function pocketPanel(body) {
   }
 }
 
-const NB_TABS = [['fish', '魚', FISH], ['bug', '虫', BUGS], ['dish', '料理', DISHES], ['crop', '農作物', CROPS], ['furn', '家具', FURNITURE], ['story', 'ストーリー'], ['friend', 'なかま']];
+const NB_TABS = [['fish', '魚', FISH], ['bug', '虫', BUGS], ['dish', '料理', DISHES], ['crop', '農作物', CROPS], ['furn', '家具', FURNITURE], ['ore', '鉱石', ORES], ['wood', '木材', WOODS], ['story', 'ストーリー'], ['friend', 'なかま']];
 let nbTab = 'fish';
 function notebookPanel(body) {
   const tabs = h('div', { class: 'tabs' });

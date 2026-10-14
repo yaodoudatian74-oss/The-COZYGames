@@ -1,6 +1,6 @@
 // ゲームの進行とシステム: 時間・移動・釣り・虫取り・畑・料理・店・家具配置・住民・物語・保存
 import {
-  CHAPTERS, SHARD_NAMES, VILLAGERS, FISH, BUGS, DISHES, CROPS, FURNITURE, SEASON_NAMES, BUG_WINGS, TOOL,
+  CHAPTERS, SHARD_NAMES, VILLAGERS, FISH, BUGS, DISHES, CROPS, FURNITURE, SEASON_NAMES, BUG_WINGS, TOOL, ORES, WOODS,
   seasonOf, yearOf, dayInSeason, inSeason, infoOf, tagsOf,
 } from './data.js';
 import { loadSave, writeSave, clamp, angleLerp } from './util.js';
@@ -8,6 +8,23 @@ import * as T from './terrain.js';
 import * as S from './scene.js';
 import { makePlayer, makeVillager, animateChar } from './models.js';
 import { se } from './audio.js';
+
+// 鉱石・木材を重み付きで選ぶ (レアなほど出にくい)
+function pickWeighted(list) {
+  let tot = 0;
+  const w = list.map((x) => { const v = 1 + (4 - x.rare) * 1.2; tot += v; return v; });
+  let r = Math.random() * tot;
+  for (let i = 0; i < list.length; i++) { r -= w[i]; if (r <= 0) return list[i]; }
+  return list[list.length - 1];
+}
+// 岩・木を消す (翌々日に戻る)
+function takeDown(kind, i) {
+  const e = S.world[kind][i];
+  e.obj.visible = false;
+  e.broken = true;
+  rt.st.gone[kind][i] = rt.st.day + 2;
+  buildObstacles();
+}
 
 export const DAY_SEC = 240; // 実時間240秒 = ゲーム内1日
 export const POCKET_MAX = 60;
@@ -27,7 +44,8 @@ export const rt = {
 
 export function newState() {
   return {
-    day: 1, hour: 6, money: 500, pocket: { [TOOL.rod]: 1, [TOOL.net]: 1, [TOOL.knife]: 1 }, disc: {}, stats: { fish: 0, bugs: 0, cooked: 0, crops: 0, sold: 0 },
+    day: 1, hour: 6, money: 500, pocket: { [TOOL.rod]: 1, [TOOL.net]: 1, [TOOL.knife]: 1, [TOOL.pick]: 1, [TOOL.axe]: 1 }, disc: {},
+    gone: { trees: {}, rocks: {} }, stats: { fish: 0, bugs: 0, cooked: 0, crops: 0, sold: 0 },
     chapter: 0, shardReady: [false, false, false, false], shardTaken: [false, false, false, false],
     plots: [], house: [], friend: {}, talked: {}, pos: { x: -20, z: 23, ry: 0 }, inside: false, lighthouseOn: false,
   };
@@ -451,6 +469,50 @@ function nearestBug(r) {
   return best;
 }
 
+// 近くにある、壊れていない岩・木の番号 (無ければ -1)。飾りの木は対象外
+function nearestIdx(kind, f, r) {
+  let best = -1, bd = r;
+  S.world[kind].forEach((e, i) => {
+    if (e.broken || e.story) return;
+    const d = Math.hypot(e.x - f.x, e.z - f.z);
+    if (d < bd) { bd = d; best = i; }
+  });
+  return best;
+}
+function mineRock(i) {
+  if (!needTool(TOOL.pick, 'つるはしが ひつようです（モコのお店で かえます）')) return;
+  const r = S.world.rocks[i];
+  r.hp = (r.hp ?? 3) - 1;
+  se.dig();
+  if (r.hp > 0) return hooks.toast('カンッ！');
+  const n = 1 + (Math.random() < 0.4 ? 1 : 0);
+  const got = [];
+  for (let k = 0; k < n; k++) {
+    const ore = pickWeighted(ORES);
+    if (addItem(ore.id, 1)) got.push(ore.name);
+  }
+  takeDown('rocks', i);
+  rt.st.stats.mined += 1;
+  se.catch();
+  hooks.toast(got.length ? `岩がくずれた！ ${got.join('・')}` : '岩がくずれた…（ポーチがいっぱい）');
+  checkStory();
+  hooks.refresh();
+}
+function chopTree(i) {
+  if (!needTool(TOOL.axe, 'おのが ひつようです（モコのお店で かえます）')) return;
+  const t = S.world.trees[i];
+  t.hp = (t.hp ?? 3) - 1;
+  se.dig();
+  if (Math.random() < 0.7) { const w = pickWeighted(WOODS); addItem(w.id, 1, true); }
+  if (t.hp > 0) return hooks.toast('カン、カン…');
+  let extra = 0;
+  for (let k = 0; k < 2; k++) { const w = pickWeighted(WOODS); if (addItem(w.id, 1)) extra += 1; }
+  takeDown('trees', i);
+  rt.st.stats.chopped += 1;
+  se.catch();
+  hooks.toast(`木が たおれた！（木材を ${extra + 1}こ ほどゲット）`);
+  hooks.refresh();
+}
 // 今押せる行動 { label, act } を返す
 export function findTarget() {
   const s = rt.st;
@@ -488,6 +550,13 @@ export function findTarget() {
   if (pi >= 0) {
     const l = plotLabel(pi);
     if (l) return { label: l, act: () => plotAct(pi) };
+  }
+  // 岩 (つるはし) と木 (おの)
+  const ri = nearestIdx('rocks', f, 2.0);
+  if (ri >= 0) return { label: 'ほる', act: () => mineRock(ri) };
+  if (hasTool(TOOL.axe)) {
+    const ti = nearestIdx('trees', f, 1.9);
+    if (ti >= 0) return { label: 'きる', act: () => chopTree(ti) };
   }
   if (rt.shakeCd <= 0) {
     const t = S.world.trees.find((tr) => Math.hypot(tr.x - f.x, tr.z - f.z) < 1.9);
@@ -542,6 +611,13 @@ function nextDay() {
   }
   rt.bugs.forEach((b) => S.removeVisual(b.obj));
   rt.bugs = [];
+  // 岩と木を戻す (消してから2日経ったもの)
+  for (const kind of ['trees', 'rocks']) {
+    for (const [i, day] of Object.entries(rt.st.gone[kind])) {
+      if (s.day >= day) { const e = S.world[kind][Number(i)]; e.obj.visible = true; e.broken = false; e.hp = 3; delete rt.st.gone[kind][i]; }
+    }
+  }
+  buildObstacles();
   persist();
   hooks.refresh();
 }
@@ -575,8 +651,8 @@ function moveBy(dx, dz) {
 
 function buildObstacles() {
   const o = [];
-  for (const t of S.world.trees) o.push({ x: t.x, z: t.z, r: t.story ? 1.0 : 0.6 });
-  for (const r of S.world.rocks) o.push({ x: r.x, z: r.z, r: 0.7 });
+  for (const t of S.world.trees) if (!t.broken) o.push({ x: t.x, z: t.z, r: t.story ? 1.0 : 0.6 });
+  for (const r of S.world.rocks) if (!r.broken) o.push({ x: r.x, z: r.z, r: 0.7 });
   for (const h of S.world.houses) o.push({ x: h.x, z: h.z, r: 1.7 });
   if (S.world.shop) o.push({ x: S.world.shop.x, z: S.world.shop.z, r: 2.0 });
   if (S.world.home) o.push({ x: S.world.home.x, z: S.world.home.z, r: 2.0 });
@@ -598,7 +674,17 @@ export function start(fresh) {
   rt.st = saved?.state ?? newState();
   if (!rt.st.plots) rt.st.plots = [];
   // 道具を持っていない古いセーブには、初期の道具を渡す
-  for (const k of [TOOL.rod, TOOL.net, TOOL.knife]) if (!rt.st.pocket[k]) rt.st.pocket[k] = 1;
+  for (const k of [TOOL.rod, TOOL.net, TOOL.knife, TOOL.pick, TOOL.axe]) if (!rt.st.pocket[k]) rt.st.pocket[k] = 1;
+  rt.st.gone ??= { trees: {}, rocks: {} };
+  rt.st.stats.mined ??= 0;
+  rt.st.stats.chopped ??= 0;
+  // 切った木・掘った岩の状態を反映する
+  for (const kind of ['trees', 'rocks']) {
+    for (const [i, day] of Object.entries(rt.st.gone[kind])) {
+      const e = S.world[kind][Number(i)];
+      if (e && day > rt.st.day) { e.obj.visible = false; e.broken = true; } else delete rt.st.gone[kind][i];
+    }
+  }
   if (!rt.st.house) rt.st.house = [];
   rt.player = makePlayer({ outfit: [200, 60, 72], pants: [220, 30, 42], shoe: [24, 40, 32], hair: [24, 45, 36], hat: true });
   S.scene.add(rt.player.root);

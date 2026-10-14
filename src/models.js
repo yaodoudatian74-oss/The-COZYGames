@@ -674,10 +674,39 @@ function toolModel(kind) {
     P(g, 'cyl', wood, { y: 0.35, sx: 0.03, sy: 0.7, sz: 0.03 });
     P(g, 'tor', [0, 0, 90], { y: 0.78, sx: 0.28, sy: 0.28, sz: 0.28, rx: Math.PI / 2 });
     P(g, 'sph', [200, 20, 92], { y: 0.78, sx: 0.26, sy: 0.04, sz: 0.26 });
+  } else if (kind === 'pick') {
+    P(g, 'cyl', wood, { y: 0.3, sx: 0.03, sy: 0.6, sz: 0.03 });
+    P(g, 'box', [210, 10, 60], { y: 0.62, sx: 0.5, sy: 0.07, sz: 0.09, rz: 0.2 });
+    P(g, 'cone', [210, 10, 60], { x: 0.22, y: 0.56, sx: 0.06, sy: 0.14, sz: 0.06, rz: -Math.PI / 2 });
+  } else if (kind === 'axe') {
+    P(g, 'cyl', wood, { y: 0.3, sx: 0.03, sy: 0.6, sz: 0.03 });
+    P(g, 'box', [210, 10, 70], { x: 0.1, y: 0.56, sx: 0.22, sy: 0.22, sz: 0.04 });
   } else {
     P(g, 'box', [0, 0, 80], { y: 0.5, sx: 0.09, sy: 0.02, sz: 0.5 });
     P(g, 'box', wood, { y: 0.14, sx: 0.1, sy: 0.12, sz: 0.2 });
   }
+  return g;
+}
+
+// 鉱石: 岩の塊に結晶が生える
+function oreModel(info) {
+  const g = new THREE.Group();
+  const c = info.color;
+  P(g, 'ico0', [30, 6, 52], { y: 0.12, sx: 0.22, sy: 0.14, sz: 0.2, ry: 0.4 });
+  const rng = rngFrom(info.id);
+  for (let i = 0; i < 4; i++) {
+    P(g, 'ico0', c, { x: (rng() - 0.5) * 0.22, y: 0.2 + rng() * 0.05, z: (rng() - 0.5) * 0.18, sx: 0.06, sy: 0.14 + rng() * 0.06, sz: 0.06, rx: (rng() - 0.5) * 0.5, rz: (rng() - 0.5) * 0.5, m: { emissive: col(c), emissiveIntensity: info.rare >= 3 ? 0.5 : 0.12 } });
+  }
+  return g;
+}
+
+// 木材: 丸太 (切り口に年輪)
+function woodModel(info) {
+  const g = new THREE.Group();
+  const c = info.color;
+  P(g, 'cyl', c, { y: 0.09, sx: 0.09, sy: 0.22, sz: 0.09, rz: Math.PI / 2 });
+  P(g, 'cyl', [c[0], c[1] * 0.6, Math.min(92, c[2] + 18)], { x: 0.111, y: 0.09, sx: 0.07, sy: 0.005, sz: 0.07, rz: Math.PI / 2 });
+  P(g, 'cyl', [c[0], c[1], c[2] - 14], { x: 0.112, y: 0.09, sx: 0.035, sy: 0.005, sz: 0.035, rz: Math.PI / 2 });
   return g;
 }
 
@@ -690,6 +719,8 @@ export function itemModel(key) {
     case 'dish': return dishModel(info);
     case 'crop': return cropModel(info, 4);
     case 'tool': return toolModel(info.tool);
+    case 'ore': return oreModel(info);
+    case 'wood': return woodModel(info);
     case 'seed': {
       // ふくろ入りのたね: 作物の色の粒を盛る
       const crop = CROPS[info.seedOf];

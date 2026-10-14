@@ -8,14 +8,16 @@
 import { rngFrom, pickOf } from './util.js';
 
 export const SEASON_NAMES = ['春', '夏', '秋', '冬'];
-export const CAT_NAME = { furn: '家具', fish: '魚', bug: '虫', dish: '料理', crop: '農作物', seed: 'たね', tool: '道具' };
+export const CAT_NAME = { furn: '家具', fish: '魚', bug: '虫', dish: '料理', crop: '農作物', seed: 'たね', tool: '道具', ore: '鉱石', wood: '木材' };
 // 道具 (なくならず、売れない)
 export const TOOLS = [
   { cat: 'tool', id: 'tool:0', name: 'つりざお', price: 800, tool: 'rod' },
   { cat: 'tool', id: 'tool:1', name: '虫あみ', price: 600, tool: 'net' },
   { cat: 'tool', id: 'tool:2', name: 'ほうちょう', price: 500, tool: 'knife' },
+  { cat: 'tool', id: 'tool:3', name: 'つるはし', price: 900, tool: 'pick' },
+  { cat: 'tool', id: 'tool:4', name: 'おの', price: 700, tool: 'axe' },
 ];
-export const TOOL = { rod: 'tool:0', net: 'tool:1', knife: 'tool:2' };
+export const TOOL = { rod: 'tool:0', net: 'tool:1', knife: 'tool:2', pick: 'tool:3', axe: 'tool:4' };
 // 1年=4季節×30日。mask は「春夏秋冬」の在/不在を '1'/'0' で表す
 export const seasonOf = (day) => Math.floor(((day - 1) % 120) / 30);
 export const yearOf = (day) => Math.floor((day - 1) / 120) + 1;
@@ -159,6 +161,54 @@ CROP_KINDS.forEach(([kn, mask, grow, price, family, hue, tag], ki) => CROP_VAR.f
   });
 }));
 
+// ───────── 鉱石 400 (20種 × 20の味) ─────────
+// [名前, 基本価格, 色[h,s,l]]
+const ORE_KINDS = [
+  ['鉄鉱石', 30, [210, 12, 42]], ['銅鉱石', 45, [24, 60, 46]], ['銀鉱石', 80, [210, 8, 74]], ['金鉱石', 150, [46, 85, 58]],
+  ['水晶', 120, [200, 60, 84]], ['アメジスト', 160, [272, 55, 62]], ['エメラルド', 200, [146, 60, 44]], ['ルビー', 220, [352, 75, 46]],
+  ['サファイア', 210, [222, 70, 46]], ['石炭', 15, [0, 0, 18]], ['大理石', 40, [40, 10, 92]], ['黒曜石', 70, [260, 20, 14]],
+  ['ヒスイ', 180, [160, 45, 58]], ['トパーズ', 170, [36, 80, 60]], ['オパール', 190, [300, 40, 80]], ['ガーネット', 130, [0, 70, 34]],
+  ['ラピスラズリ', 175, [226, 80, 36]], ['砂金', 110, [50, 90, 70]], ['隕石', 260, [270, 30, 30]], ['化石石', 60, [30, 20, 60]],
+];
+// [接頭語, レア度0-4, 色相のずれ, 明るさのずれ]
+const ORE_VARS = [
+  ['ふつうの', 0, 0, 0], ['キラキラの', 2, 0, 10], ['あたたかい', 1, 15, 0], ['つめたい', 1, -15, 0], ['ふしぎな', 3, 60, -4],
+  ['くろい', 1, 0, -20], ['しろい', 1, 0, 18], ['あおい', 1, -40, 0], ['あかい', 1, 40, 0], ['みどりの', 1, 90, 0],
+  ['むらさきの', 2, 120, 0], ['きんいろの', 3, 20, 8], ['ぎんいろの', 2, -60, 12], ['虹色の', 4, 150, 6], ['星の', 4, 200, -8],
+  ['深い', 2, 0, -12], ['浅い', 0, 0, 12], ['大きな', 2, 0, 4], ['小さな', 0, 0, -4], ['古い', 2, -20, -14],
+];
+export const ORES = [];
+ORE_KINDS.forEach(([kn, base, hsl]) => ORE_VARS.forEach(([vn, rare, dh, dl]) => {
+  ORES.push({
+    cat: 'ore', id: `ore:${ORES.length}`, name: vn + kn, price: Math.round(base * (1 + rare * 0.7)), rare,
+    color: [(hsl[0] + dh + 360) % 360, hsl[1], Math.min(90, Math.max(12, hsl[2] + dl))],
+  });
+}));
+
+// ───────── 木材 400 (20種 × 20の味) ─────────
+// [名前, 基本価格, 色[h,s,l]]
+const WOOD_KINDS = [
+  ['スギ', 20, [28, 45, 50]], ['ヒノキ', 30, [30, 55, 62]], ['マツ', 25, [24, 40, 46]], ['ブナ', 28, [34, 40, 70]],
+  ['カシ', 35, [22, 35, 40]], ['サクラ', 45, [340, 40, 74]], ['カエデ', 40, [16, 60, 50]], ['クリ', 32, [20, 45, 38]],
+  ['ツバキ', 38, [12, 38, 36]], ['ユズ', 42, [62, 50, 50]], ['ウメ', 44, [350, 30, 58]], ['シラカバ', 36, [40, 8, 88]],
+  ['ヤナギ', 24, [80, 35, 56]], ['ヒイラギ', 33, [120, 30, 34]], ['ケヤキ', 34, [26, 50, 54]], ['イチョウ', 40, [46, 80, 58]],
+  ['リンゴ', 39, [0, 60, 58]], ['ミカン', 36, [30, 85, 56]], ['キリ', 26, [44, 30, 80]], ['クスノキ', 48, [18, 35, 40]],
+];
+// [接頭語, レア度0-4, 色相のずれ, 明るさのずれ]
+const WOOD_VARS = [
+  ['ふつうの', 0, 0, 0], ['まっすぐな', 1, 0, 0], ['よく乾いた', 1, 0, 6], ['節のある', 0, -6, -4], ['つやつやの', 2, 0, 8],
+  ['ねじれた', 0, 8, -6], ['香りの', 2, 10, 0], ['重い', 1, 0, -8], ['軽い', 1, 0, 10], ['金色の', 3, 22, 10],
+  ['古い', 2, -10, -12], ['新しい', 0, 0, 10], ['大きな', 2, 0, 0], ['細い', 0, 0, -2], ['しましまの', 1, -14, 2],
+  ['ぴかぴかの', 3, 0, 14], ['苔の', 2, 70, -8], ['雪の', 3, 200, 22], ['星の', 4, 230, -10], ['虹色の', 4, 150, 6],
+];
+export const WOODS = [];
+WOOD_KINDS.forEach(([kn, base, hsl]) => WOOD_VARS.forEach(([vn, rare, dh, dl]) => {
+  WOODS.push({
+    cat: 'wood', id: `wood:${WOODS.length}`, name: vn + kn + '材', price: Math.round(base * (1 + rare * 0.6)), rare,
+    color: [(hsl[0] + dh + 360) % 360, hsl[1], Math.min(92, Math.max(12, hsl[2] + dl))],
+  });
+}));
+
 // ───────── 参照ヘルパー ─────────
 export function infoOf(key) {
   const [t, n] = key.split(':');
@@ -170,6 +220,8 @@ export function infoOf(key) {
     case 'dish': return DISHES[i];
     case 'crop': return CROPS[i];
     case 'tool': return TOOLS[i];
+    case 'ore': return ORES[i];
+    case 'wood': return WOODS[i];
     case 'seed': {
       const c = CROPS[i];
       return { cat: 'seed', id: key, name: c.name + 'のたね', price: Math.round(c.price * 0.35), seedOf: i };
@@ -195,6 +247,8 @@ export function describe(info) {
     case 'crop': return `育つまで${info.growDays}日。${info.mask.split('').map((b, i) => (b === '1' ? '春夏秋冬'[i] : '')).join('')}に育てやすい。`;
     case 'furn': return `${info.fp[0]}×${info.fp[1]}マスを使う家具。`;
     case 'tool': return '道具。なくならないし、売ることはできない。';
+    case 'ore': return `${info.rare >= 3 ? 'めずらしい鉱石。' : '鉱石。'}つるはしで岩をほると手に入る。`;
+    case 'wood': return `木材。おので木を切ると手に入る。${info.rare >= 3 ? 'とてもめずらしい。' : ''}`;
     default: return '';
   }
 }
