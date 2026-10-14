@@ -276,6 +276,24 @@ function buildVillage(sc) {
   world.home = { x: hp.x, z: hp.z, rot: faceTo(hp.x, hp.z, PLAZA.x, PLAZA.z) };
   home.rotation.y = world.home.rot;
   sc.add(home);
+  // 主人公の家の看板 (家の前に立つ。広場の方を向く)
+  const board = new THREE.Group();
+  M.P(board, 'cyl', [28, 45, 40], { y: 0.7, sx: 0.05, sy: 1.4, sz: 0.05 });
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 96;
+  const g2 = cv.getContext('2d');
+  g2.fillStyle = '#fff6e0'; g2.fillRect(0, 0, 256, 96);
+  g2.strokeStyle = '#6b4a2b'; g2.lineWidth = 8; g2.strokeRect(4, 4, 248, 88);
+  g2.fillStyle = '#4a3019'; g2.font = 'bold 44px sans-serif'; g2.textAlign = 'center'; g2.textBaseline = 'middle';
+  g2.fillText('マイホーム', 128, 50);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const boardMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.56), new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide }));
+  boardMesh.position.set(0, 1.45, 0);
+  board.add(boardMesh);
+  board.position.set(hp.x + Math.sin(world.home.rot) * 2.6, hp.h - 0.05, hp.z + Math.cos(world.home.rot) * 2.6);
+  board.rotation.y = world.home.rot;
+  sc.add(board);
 
   const sign = M.signModel();
   sign.position.set(PLAZA.x + 3, heightAt(PLAZA.x + 3, PLAZA.z + 3), PLAZA.z + 3);
