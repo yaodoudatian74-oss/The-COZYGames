@@ -111,6 +111,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
   .thumb, .unknown { width: 70px; height: 70px; }
 }
+
+/* スマホでは操作部品を小さくして景色を見やすくする */
+@media (max-width: 720px) {
+  #hud-top { top: calc(8px + env(safe-area-inset-top)); left: 8px; right: auto; gap: 5px; }
+  .chip { font-size: 11px; padding: 3px 9px; }
+  #hud-goal-wrap { flex: 0 1 auto; max-width: 62vw; padding: 3px 8px; border-radius: 10px; }
+  #hud-goal { font-size: 10px; line-height: 1.35; }
+  #hud-track { height: 5px; margin-top: 3px; }
+  #hud-bottom { top: calc(8px + env(safe-area-inset-top)); right: 8px; gap: 5px; }
+  .pill { font-size: 11px; padding: 5px 9px; border-radius: 10px; border-width: 1.5px; }
+  #act { width: 74px; height: 74px; font-size: 11px; right: 14px; bottom: calc(22px + env(safe-area-inset-bottom)); border-width: 3px; }
+  #btn-rot { right: 96px; bottom: calc(22px + env(safe-area-inset-bottom)); }
+  #btn-cancel { right: 14px; bottom: calc(108px + env(safe-area-inset-bottom)); }
+  #joy { width: 96px; height: 96px; left: 12px; bottom: calc(16px + env(safe-area-inset-bottom)); }
+  #joy-knob { width: 40px; height: 40px; margin: -20px 0 0 -20px; }
+  #save-note { font-size: 11px; padding: 3px 9px; bottom: calc(8px + env(safe-area-inset-bottom)); }
+}
 </style>
 </head>
 <body>
