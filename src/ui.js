@@ -193,7 +193,7 @@ function pocketPanel(body) {
       h('div', { class: 'detail-name' }, info.name),
       h('div', { class: 'note' }, `ねだん ${info.price} コイン　${describe(info)}`),
       h('button', { class: 'btn', onclick: () => { G.sell(panelData, 1); } }, 'うる（1こ）'),
-      info.cat === 'furn' && G.rt.st.inside ? h('button', { class: 'btn primary', onclick: () => { closePanel(); G.startPlacing(panelData); } }, 'おく') : null,
+      info.cat === 'furn' ? h('button', { class: 'btn primary', onclick: () => { closePanel(); G.startPlacing(panelData); } }, 'おく') : null,
       info.cat === 'seed' ? h('button', { class: 'btn primary', onclick: () => G.selectSeed(panelData) }, 'まく用にえらぶ') : null,
     );
     body.append(actions);

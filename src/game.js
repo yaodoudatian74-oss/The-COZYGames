@@ -47,7 +47,7 @@ export function newState() {
     day: 1, hour: 6, money: 500, pocket: { [TOOL.rod]: 1, [TOOL.net]: 1, [TOOL.knife]: 1, [TOOL.pick]: 1, [TOOL.axe]: 1, [TOOL.shovel]: 1 }, disc: {},
     gone: { trees: {}, rocks: {} }, stats: { fish: 0, bugs: 0, cooked: 0, crops: 0, sold: 0 },
     chapter: 0, shardReady: [false, false, false, false], shardTaken: [false, false, false, false],
-    plots: [], house: [], friend: {}, talked: {}, pos: { x: -20, z: 23, ry: 0 }, inside: false, lighthouseOn: false,
+    plots: [], house: [], outdoorFurn: [], friend: {}, talked: {}, pos: { x: -20, z: 23, ry: 0 }, inside: false, lighthouseOn: false,
   };
 }
 
@@ -243,26 +243,42 @@ function roomCellsOK(cells, occ) {
 }
 
 export function startPlacing(key) {
-  if (!rt.st.inside) return hooks.toast('おうちの中で おけるよ');
   rt.placing = { key, rot: 0 };
   hooks.toast('Spaceでおく・Rでまわす・Escでやめる');
   hooks.refresh();
 }
 function placingCell() {
   const p = rt.st.pos;
+  if (!rt.st.inside) return { x: Math.floor(p.x + Math.sin(p.ry) * 1.3), z: Math.floor(p.z + Math.cos(p.ry) * 1.3) };
   const fx = p.x + Math.sin(p.ry) * 1.3 - OFF.x, fz = p.z + Math.cos(p.ry) * 1.3 - OFF.z;
   return { x: Math.floor(fx), z: Math.floor(fz) };
+}
+// 外に置けるか: 歩ける草地で、岩・木・家・他の家具と重ならない
+function outdoorCellsOK(cells) {
+  return cells.every(([x, z]) => {
+    const cx = x + 0.5, cz = z + 0.5;
+    if (!T.walkable(cx, cz) || T.waterKindAt(cx, cz)) return false;
+    return !rt.obstacles.some((o) => Math.hypot(o.x - cx, o.z - cz) < o.r + 0.4);
+  });
+}
+// 家具の中心 (buildObstacles 用)
+function furnCenter(e) {
+  const fp = FURNITURE[Number(e.key.split(':')[1])].fp;
+  const sw = e.rot % 2 === 1;
+  return [e.x + (sw ? fp[1] : fp[0]) / 2, e.z + (sw ? fp[0] : fp[1]) / 2];
 }
 function placeFurnitureHere() {
   const pl = rt.placing, s = rt.st;
   if (!countOf(pl.key)) { rt.placing = null; return hooks.toast('もう おけるものがない'); }
   const c = placingCell();
   const cells = cellsOf(pl.key, c.x, c.z, pl.rot);
-  if (!roomCellsOK(cells, occupancy())) return hooks.toast('ここには おけない');
+  const ok = s.inside ? roomCellsOK(cells, occupancy()) : outdoorCellsOK(cells);
+  if (!ok) return hooks.toast('ここには おけない');
   const entry = { id: 'h' + rt.nextId++, key: pl.key, x: c.x, z: c.z, rot: pl.rot };
-  s.house.push(entry);
+  (s.inside ? s.house : s.outdoorFurn).push(entry);
   removeItem(pl.key, 1);
-  S.placeFurniture(entry.id, entry, { fp: FURNITURE[Number(pl.key.split(':')[1])].fp });
+  S.placeFurniture(entry.id, entry, { fp: FURNITURE[Number(pl.key.split(':')[1])].fp, outdoor: !s.inside });
+  buildObstacles();
   rt.placing = null; // 1つおいたら配置モードを終える
   se.place();
   hooks.toast('おいた！');
@@ -270,12 +286,15 @@ function placeFurnitureHere() {
 }
 function pickupFurnitureHere() {
   const c = placingCell();
-  const idx = rt.st.house.findIndex((e) => cellsOf(e.key, e.x, e.z, e.rot).some(([x, z]) => x === c.x && z === c.z));
+  const list = rt.st.inside ? rt.st.house : rt.st.outdoorFurn;
+  const idx = list.findIndex((e) => cellsOf(e.key, e.x, e.z, e.rot).some(([x, z]) => x === c.x && z === c.z));
   if (idx < 0) return false;
-  const [e] = rt.st.house.splice(idx, 1);
+  const [e] = list.splice(idx, 1);
   S.removeFurniture(e.id);
   addItem(e.key, 1);
+  buildObstacles();
   hooks.toast(`${infoOf(e.key).name}を しまった`);
+  hooks.refresh();
   return true;
 }
 
@@ -544,6 +563,8 @@ export function findTarget() {
     }
     return null;
   }
+  const fc = { x: Math.floor(f.x), z: Math.floor(f.z) };
+  if (s.outdoorFurn.some((e) => cellsOf(e.key, e.x, e.z, e.rot).some(([x, z]) => x === fc.x && z === fc.z))) return { label: 'ひろう', act: pickupFurnitureHere };
   const b = nearestBug(2.3);
   if (b) return { label: 'あみでとる', act: () => bugAct(b) };
   for (let c = 0; c < 4; c++) {
@@ -671,6 +692,7 @@ function buildObstacles() {
   for (const t of S.world.trees) if (!t.broken) o.push({ x: t.x, z: t.z, r: t.story ? 1.0 : 0.6 });
   for (const r of S.world.rocks) if (!r.broken) o.push({ x: r.x, z: r.z, r: 0.7 });
   for (const h of S.world.houses) o.push({ x: h.x, z: h.z, r: 1.7 });
+  for (const e of rt.st.outdoorFurn || []) { const [cx, cz] = furnCenter(e); o.push({ x: cx, z: cz, r: 0.6 }); }
   if (S.world.shop) o.push({ x: S.world.shop.x, z: S.world.shop.z, r: 2.0 });
   if (S.world.home) o.push({ x: S.world.home.x, z: S.world.home.z, r: 3.0 });
   if (S.world.lighthouse) o.push({ x: S.world.lighthouse.x, z: S.world.lighthouse.z, r: 2.0 });
@@ -690,6 +712,7 @@ export function start(fresh) {
   const saved = fresh ? null : loadSave();
   rt.st = saved?.state ?? newState();
   if (!rt.st.plots) rt.st.plots = [];
+  rt.st.outdoorFurn ??= [];
   // 道具を持っていない古いセーブには、初期の道具を渡す
   for (const k of [TOOL.rod, TOOL.net, TOOL.knife, TOOL.pick, TOOL.axe, TOOL.shovel]) if (!rt.st.pocket[k]) rt.st.pocket[k] = 1;
   rt.st.gone ??= { trees: {}, rocks: {} };
@@ -707,7 +730,8 @@ export function start(fresh) {
   S.scene.add(rt.player.root);
   buildObstacles();
   createVillagers();
-  rt.st.house.forEach((e) => S.placeFurniture(e.id, e, { fp: FURNITURE[Number(e.key.split(':')[1])].fp }));
+  rt.st.house.forEach((e) => S.placeFurniture(e.id, e, { fp: FURNITURE[Number(e.key.split(':')[1])].fp, outdoor: false }));
+  rt.st.outdoorFurn.forEach((e) => S.placeFurniture(e.id, e, { fp: FURNITURE[Number(e.key.split(':')[1])].fp, outdoor: true }));
   rt.st.shardReady.forEach((ready, c) => { if (ready && !rt.st.shardTaken[c]) S.setShardVisible(c, true); });
   if (rt.st.lighthouseOn) S.setLighthouse(true);
   S.setSeason(SEASON_KEYS[seasonOf(rt.st.day)]);
@@ -746,8 +770,8 @@ export function update(dt, input, camYaw) {
   if (rt.placing) {
     const c = placingCell();
     const cells = cellsOf(rt.placing.key, c.x, c.z, rt.placing.rot);
-    const valid = roomCellsOK(cells, OCC) && countOf(rt.placing.key) > 0;
-    S.setGhost(rt.placing.key, { x: c.x, z: c.z, rot: rt.placing.rot, fp: FURNITURE[Number(rt.placing.key.split(':')[1])].fp }, valid);
+    const valid = (s.inside ? roomCellsOK(cells, OCC) : outdoorCellsOK(cells)) && countOf(rt.placing.key) > 0;
+    S.setGhost(rt.placing.key, { x: c.x, z: c.z, rot: rt.placing.rot, fp: FURNITURE[Number(rt.placing.key.split(':')[1])].fp }, valid, !s.inside);
   } else S.setGhost(null, null, false);
   // つり
   const f = rt.fishing;

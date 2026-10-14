@@ -509,7 +509,7 @@ export function update(dt, time, hour, focus, inside) {
 // ---------- 外部から使う操作 ----------
 // 開始し直すとき: 前回の家具・畑の表示を消し、かけらと灯台を初期状態に戻す
 export function resetWorldObjects() {
-  for (const o of furnMeshes.values()) interior.remove(o);
+  for (const o of furnMeshes.values()) o.parent?.remove(o);
   furnMeshes.clear();
   for (const g of plotGroups.values()) outdoor.remove(g);
   plotGroups.clear();
@@ -542,37 +542,48 @@ export function setPlot(i, plot) {
   if (plot.crop != null) g.add(M.cropModel(CROPS[plot.crop], plot.stage));
 }
 
+// 家具を置く。cell.outdoor が true なら外 (草の上)、false なら家の中
 export function placeFurniture(id, entry, cell) {
   const { x, z, rot } = entry;
   const obj = M.itemModel(entry.key);
-  const fp = cell.fp, sw = rot % 2 === 1;
-  const w = sw ? fp[1] : fp[0], d = sw ? fp[0] : fp[1];
-  obj.position.set(INT_OFF.x + x + w / 2, 0, INT_OFF.z + z + d / 2);
+  const [w, d] = footprint(cell.fp, rot);
+  if (cell.outdoor) {
+    const cx = x + w / 2, cz = z + d / 2;
+    obj.position.set(cx, Math.max(heightAt(cx, cz), 0), cz);
+    outdoor.add(obj);
+  } else {
+    obj.position.set(INT_OFF.x + x + w / 2, 0, INT_OFF.z + z + d / 2);
+    interior.add(obj);
+  }
   obj.rotation.y = -rot * Math.PI / 2;
-  interior.add(obj);
   furnMeshes.set(id, obj);
 }
+const footprint = (fp, rot) => (rot % 2 === 1 ? [fp[1], fp[0]] : [fp[0], fp[1]]);
 export function removeFurniture(id) {
   const o = furnMeshes.get(id);
-  if (o) { interior.remove(o); furnMeshes.delete(id); }
+  if (o) { o.parent?.remove(o); furnMeshes.delete(id); }
 }
-
-export function setGhost(key, cell, valid) {
+// 配置中の半透明の見本 (outdoorMode で外か家の中かを決める)
+export function setGhost(key, cell, valid, outdoorMode = false) {
   if (!cell) { if (ghost) ghost.visible = false; return; }
   if (!ghost || ghost.userData.key !== key) {
-    if (ghost) interior.remove(ghost);
+    ghost?.parent?.remove(ghost);
     ghost = M.itemModel(key);
     ghost.userData.key = key;
     ghost.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.55; o.castShadow = false; } });
-    interior.add(ghost);
   }
+  const parent = outdoorMode ? outdoor : interior;
+  if (ghost.parent !== parent) { ghost.parent?.remove(ghost); parent.add(ghost); }
   ghost.visible = true;
-  const { x, z, rot, fp } = cell;
-  const sw = rot % 2 === 1;
-  const w = sw ? fp[1] : fp[0], d = sw ? fp[0] : fp[1];
-  ghost.position.set(INT_OFF.x + x + w / 2, 0, INT_OFF.z + z + d / 2);
-  ghost.rotation.y = -rot * Math.PI / 2;
-  ghost.traverse((o) => { if (o.isMesh) o.material.color.setRGB(valid ? 1 : 1, valid ? 1 : 0.4, valid ? 1 : 0.4); });
+  const [w, d] = footprint(cell.fp, cell.rot);
+  if (outdoorMode) {
+    const cx = cell.x + w / 2, cz = cell.z + d / 2;
+    ghost.position.set(cx, Math.max(heightAt(cx, cz), 0), cz);
+  } else {
+    ghost.position.set(INT_OFF.x + cell.x + w / 2, 0, INT_OFF.z + cell.z + d / 2);
+  }
+  ghost.rotation.y = -cell.rot * Math.PI / 2;
+  ghost.traverse((o) => { if (o.isMesh) o.material.color.setRGB(1, valid ? 1 : 0.4, valid ? 1 : 0.4); });
 }
 
 export function spawnVisual(key, x, z) {
