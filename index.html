@@ -18,7 +18,9 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #9fd8ff; }
 body { font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif; color: var(--brown-d); -webkit-tap-highlight-color: transparent; user-select: none; touch-action: none; }
-#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; }
+/* 操作部品の上では、ブラウザがスクロール等で指の動きを横取りしないようにする */
+#joy, #act, #btn-rot, #btn-cancel, #hud button, #dialog, #panel, #title button { touch-action: none; }
 .hidden { display: none !important; }
 button { font: inherit; color: inherit; cursor: pointer; }
 
@@ -102,6 +104,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #title button { background: var(--paper); border: 3px solid var(--brown); border-radius: 18px; padding: 14px; font-size: 18px; font-weight: 700; box-shadow: var(--shadow); }
 #title button.primary { background: var(--leaf); color: #fff; border-color: var(--leaf-d); }
 #title button:disabled { opacity: .45; }
+#title button.sub { font-size: 14px; padding: 10px; border-width: 2px; }
 #title .help { margin-top: 24px; font-size: 13px; max-width: 560px; line-height: 1.8; color: #5a3a1c; background: rgba(255,253,246,.75); padding: 10px 14px; border-radius: 14px; }
 
 @media (max-width: 720px) {
@@ -181,6 +184,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   <div class="menu">
     <button class="primary" id="btn-new">はじめから</button>
     <button id="btn-continue" disabled>つづきから</button>
+    <button id="btn-full" class="sub">全画面で遊ぶ</button>
   </div>
   <div class="help">
     嵐の夜、ひだまり島の浜に流れ着いたあなたの物語。<br>

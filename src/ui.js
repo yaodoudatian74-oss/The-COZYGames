@@ -343,6 +343,10 @@ export function init(onStart) {
     onStart(true);
   };
   $('btn-continue').onclick = () => onStart(false);
+  $('btn-full').onclick = () => {
+    // ブラウザの枠を消して画面いっぱいに表示する (対応していない環境では何もしない)
+    try { const el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen).call(el); } catch { /* 非対応 */ }
+  };
   $('btn-pocket').onclick = () => togglePanel('pocket');
   $('btn-note').onclick = () => togglePanel('notebook');
   $('btn-menu').onclick = () => togglePanel('menu');
