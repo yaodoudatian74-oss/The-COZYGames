@@ -272,6 +272,7 @@ function buildVillage(sc) {
 
   const hp = findSpot(PLAYER_HOUSE_SITE[0], PLAYER_HOUSE_SITE[1], 10);
   const home = M.houseModel([36, 30, 92], [350, 55, 46], 2.0, 1.8, 1.3);
+  home.scale.setScalar(2); // 主人公の家は大きく (玄関の位置は game.js の homeDoor と合わせる)
   home.position.set(hp.x, hp.h - 0.05, hp.z);
   world.home = { x: hp.x, z: hp.z, rot: faceTo(hp.x, hp.z, PLAZA.x, PLAZA.z) };
   home.rotation.y = world.home.rot;
@@ -291,7 +292,7 @@ function buildVillage(sc) {
   const boardMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.56), new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide }));
   boardMesh.position.set(0, 1.45, 0);
   board.add(boardMesh);
-  board.position.set(hp.x + Math.sin(world.home.rot) * 2.6, hp.h - 0.05, hp.z + Math.cos(world.home.rot) * 2.6);
+  board.position.set(hp.x + Math.sin(world.home.rot) * 4.2, hp.h - 0.05, hp.z + Math.cos(world.home.rot) * 4.2);
   board.rotation.y = world.home.rot;
   sc.add(board);
 

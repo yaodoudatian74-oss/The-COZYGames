@@ -222,7 +222,7 @@ function createVillagers() {
 export function homeDoor(out = 0) {
   const h = S.world.home;
   const dx = Math.sin(h.rot), dz = Math.cos(h.rot);
-  return { x: h.x + dx * (1.4 + out), z: h.z + dz * (1.4 + out), dx, dz };
+  return { x: h.x + dx * (2.4 + out), z: h.z + dz * (2.4 + out), dx, dz };
 }
 
 const cellsOf = (key, x, z, rot) => {
@@ -672,7 +672,7 @@ function buildObstacles() {
   for (const r of S.world.rocks) if (!r.broken) o.push({ x: r.x, z: r.z, r: 0.7 });
   for (const h of S.world.houses) o.push({ x: h.x, z: h.z, r: 1.7 });
   if (S.world.shop) o.push({ x: S.world.shop.x, z: S.world.shop.z, r: 2.0 });
-  if (S.world.home) o.push({ x: S.world.home.x, z: S.world.home.z, r: 2.0 });
+  if (S.world.home) o.push({ x: S.world.home.x, z: S.world.home.z, r: 3.0 });
   if (S.world.lighthouse) o.push({ x: S.world.lighthouse.x, z: S.world.lighthouse.z, r: 2.0 });
   rt.obstacles = o;
 }
