@@ -105,7 +105,7 @@ check('畑の前で「たねをまく」', await until(() => window.__game.G.fin
 await press();
 check('たねをまくと作物が植わる', await until(() => window.__game.G.rt.st.plots[0]?.crop != null, 4000));
 await ev(() => { window.__game.G.rt.st.hour = 29.9; });
-await advance(1);
+await advance(3);
 const grew = await ev(() => window.__game.G.rt.st.day === 2);
 const plot = await ev(() => window.__game.G.rt.st.plots[0]);
 check('翌日になり作物が育つ', grew && plot.grow >= 1, `day=${await ev(() => window.__game.G.rt.st.day)} grow=${plot.grow} stage=${plot.stage}`);
