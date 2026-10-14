@@ -1,2 +1,7 @@
 node_modules/
 qa-shots/
+www/
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
