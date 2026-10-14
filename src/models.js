@@ -227,19 +227,21 @@ const FOLIAGE = {
   leaf: [0, 1, 2].map(() => windMat([110, 50, 50], 0.035, 1.2)),
   blossom: windMat([330, 65, 86], 0.03, 1.4),
   pine: windMat([150, 40, 30], 0.02, 1.0),
+  hi: windMat([100, 60, 70], 0.035, 1.3),
 };
 const FRUIT = mat([0, 75, 52]);
 const SEASON_COL = {
-  spring: { leaf: [[98, 58, 60], [110, 50, 52], [90, 60, 66]], blossom: [336, 70, 86], pine: [150, 40, 30] },
-  summer: { leaf: [[122, 52, 40], [112, 55, 46], [136, 48, 36]], blossom: [120, 50, 40], pine: [152, 42, 26] },
-  autumn: { leaf: [[26, 78, 52], [40, 80, 54], [6, 70, 44]], blossom: [22, 80, 52], pine: [120, 30, 26] },
-  winter: { leaf: [[150, 22, 92], [200, 18, 94], [220, 14, 86]], blossom: [200, 20, 94], pine: [200, 20, 70] },
+  spring: { leaf: [[98, 58, 60], [110, 50, 52], [90, 60, 66]], blossom: [336, 70, 86], pine: [150, 40, 30], hi: [96, 74, 78] },
+  summer: { leaf: [[122, 52, 40], [112, 55, 46], [136, 48, 36]], blossom: [120, 50, 40], pine: [152, 42, 26], hi: [116, 66, 58] },
+  autumn: { leaf: [[26, 78, 52], [40, 80, 54], [6, 70, 44]], blossom: [22, 80, 52], pine: [120, 30, 26], hi: [40, 84, 62] },
+  winter: { leaf: [[150, 22, 92], [200, 18, 94], [220, 14, 86]], blossom: [200, 20, 94], pine: [200, 20, 70], hi: [200, 14, 98] },
 };
 export function setSeasonColors(season) {
   const p = SEASON_COL[season];
   FOLIAGE.leaf.forEach((m, i) => m.color.copy(col(p.leaf[i])));
   FOLIAGE.blossom.color.copy(col(p.blossom));
   FOLIAGE.pine.color.copy(col(p.pine));
+  FOLIAGE.hi.color.copy(col(p.hi));
 }
 setSeasonColors('spring');
 
@@ -251,11 +253,14 @@ export function treeModel(kind, rng) {
     return g;
   }
   P(g, 'cyl', TRUNK, { y: 0.7, sx: 0.15, sy: 1.4, sz: 0.15, rz: (rng() - 0.5) * 0.12 });
-  const n = 5 + Math.floor(rng() * 3);
+  // 葉の塊を細かく重ねる (大きな塊 + 小さな塊 + 日の当たる明るい葉)
+  const n = 8 + Math.floor(rng() * 4);
   for (let i = 0; i < n; i++) {
-    const a = rng() * TAU, r = rng() * 0.6;
+    const a = rng() * TAU, r = rng() * 0.7;
     const m = kind === 'cherry' ? FOLIAGE.blossom : FOLIAGE.leaf[i % 3];
-    P(g, 'ico1', m, { x: Math.cos(a) * r, y: 1.9 + rng() * 0.7, z: Math.sin(a) * r, s: 0.5 + rng() * 0.35 });
+    const y = 1.8 + rng() * 0.9;
+    P(g, 'ico1', m, { x: Math.cos(a) * r, y, z: Math.sin(a) * r, s: 0.4 + rng() * 0.3 });
+    if (rng() < 0.6) P(g, 'ico1', FOLIAGE.hi, { x: Math.cos(a) * r * 1.1 + 0.08, y: y + 0.15, z: Math.sin(a) * r * 1.1 - 0.05, s: 0.22 + rng() * 0.12 });
   }
   if (kind === 'fruit') {
     for (let i = 0; i < 5; i++) {

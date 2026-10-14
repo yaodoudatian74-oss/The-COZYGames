@@ -55,20 +55,32 @@ function skyAt(hour) {
 // ---------- 地面の模様テクスチャ (草の筋) ----------
 function detailTexture() {
   const c = document.createElement('canvas');
-  c.width = c.height = 512;
+  c.width = c.height = 1024;
   const g = c.getContext('2d');
   g.fillStyle = '#ffffff';
-  g.fillRect(0, 0, 512, 512);
+  g.fillRect(0, 0, 1024, 1024);
   const r = rngFrom('ground-tex');
-  for (let i = 0; i < 9000; i++) {
-    const x = r() * 512, y = r() * 512, l = 3 + r() * 8, a = -Math.PI / 2 + (r() - 0.5) * 1.0;
-    g.strokeStyle = r() < 0.5 ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.22)';
-    g.lineWidth = 1 + r() * 0.8;
+  // 草の筋 (細かく、濃淡つき)
+  for (let i = 0; i < 26000; i++) {
+    const x = r() * 1024, y = r() * 1024, l = 3 + r() * 9, a = -Math.PI / 2 + (r() - 0.5) * 1.1;
+    g.strokeStyle = r() < 0.5 ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.24)';
+    g.lineWidth = 0.8 + r() * 0.9;
     g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+  }
+  // 小さな土の粒と、ところどころの濃い草むら
+  for (let i = 0; i < 2600; i++) {
+    g.fillStyle = r() < 0.5 ? 'rgba(60,40,20,0.12)' : 'rgba(255,255,255,0.12)';
+    g.fillRect(r() * 1024, r() * 1024, 1 + r() * 2, 1 + r() * 2);
+  }
+  for (let i = 0; i < 40; i++) {
+    const x = r() * 1024, y = r() * 1024, rad = 30 + r() * 60;
+    const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+    gr.addColorStop(0, 'rgba(0,0,0,0.10)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
   }
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(HALF / 2, HALF / 2);
+  t.repeat.set(HALF / 3, HALF / 3);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4;
   return t;
@@ -204,6 +216,36 @@ function buildScatter(sc) {
     grassTint[i] = a;
   });
   sc.add(grassMesh);
+  // 小石・小さなきのこ (地面に細かく散らす)
+  const pebble = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.07, 0), M.mat([0, 0, 100]), 1400);
+  const cap = new THREE.InstancedMesh(new THREE.SphereGeometry(0.06, 8, 6), M.mat([0, 0, 100]), 260);
+  const stem = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.02, 0.025, 0.08, 6), M.mat([40, 20, 92]), 260);
+  const pr = rngFrom('pebbles');
+  const sm = new THREE.Object3D();
+  const pl = S.grass.filter((_, i) => i % 19 === 0).slice(0, 1400);
+  pl.forEach(([x, h, z], i) => {
+    sm.position.set(x + (pr() - 0.5) * 0.6, h + 0.03, z + (pr() - 0.5) * 0.6);
+    sm.rotation.set(pr() * 3, pr() * 3, pr() * 3);
+    sm.scale.setScalar(0.6 + pr() * 0.9);
+    sm.updateMatrix();
+    pebble.setMatrixAt(i, sm.matrix);
+    pebble.setColorAt(i, col([30 + pr() * 20, 6 + pr() * 10, 55 + pr() * 20]));
+  });
+  pebble.count = pl.length;
+  const shrooms = S.grass.filter((_, i) => i % 97 === 0).slice(0, 260);
+  shrooms.forEach(([x, h, z], i) => {
+    sm.position.set(x, h + 0.04, z);
+    sm.rotation.set(0, pr() * 6, 0);
+    sm.scale.setScalar(0.8 + pr() * 0.6);
+    sm.updateMatrix();
+    stem.setMatrixAt(i, sm.matrix);
+    sm.position.y += 0.06;
+    sm.updateMatrix();
+    cap.setMatrixAt(i, sm.matrix);
+    cap.setColorAt(i, col(i % 2 ? [4, 72, 56] : [40, 40, 96]));
+  });
+  cap.count = shrooms.length; stem.count = shrooms.length;
+  for (const m of [pebble, cap, stem]) { m.castShadow = false; m.receiveShadow = true; sc.add(m); }
   // 花
   const fl = new THREE.SphereGeometry(0.08, 6, 5);
   flowerCount = S.flowers.length;
