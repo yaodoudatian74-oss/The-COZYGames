@@ -4,6 +4,30 @@ import { rngFrom, TAU } from './util.js';
 import { infoOf, CROPS, BUG_WINGS } from './data.js';
 
 export const WIND = { uTime: { value: 0 } };
+// あつ森風のセル調: 光が当たる所を3段階でくっきり分ける
+export const TOON_GRAD = (() => {
+  const t = new THREE.DataTexture(new Uint8Array([105, 170, 255]), 3, 1, THREE.RedFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.needsUpdate = true;
+  return t;
+})();
+// 輪郭線: 少し膨らませた裏面を暗い色で描く
+const OUTLINE = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  uniforms: { w: { value: 0.022 }, c: { value: new THREE.Color(0.22, 0.14, 0.08) } },
+  vertexShader: 'uniform float w; void main(){ vec3 p = position + normal * w; gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }',
+  fragmentShader: 'uniform vec3 c; void main(){ gl_FragColor = vec4(c, 1.0); }',
+});
+function outline(root) {
+  const meshes = [];
+  root.traverse((o) => { if (o.isMesh && !o.material.transparent) meshes.push(o); });
+  for (const mm of meshes) {
+    const o = new THREE.Mesh(mm.geometry, OUTLINE);
+    o.position.copy(mm.position); o.rotation.copy(mm.rotation); o.scale.copy(mm.scale);
+    o.castShadow = false; o.receiveShadow = false;
+    mm.parent.add(o);
+  }
+}
 const SKIN = [28, 62, 86];
 
 // ---------- 共通 ----------
@@ -31,10 +55,10 @@ export function col(c) {
 
 const MATS = new Map();
 export function mat(c, o = {}) {
-  if (Object.keys(o).length) return new THREE.MeshLambertMaterial({ color: col(c), ...o });
+  if (Object.keys(o).length) return new THREE.MeshToonMaterial({ color: col(c), gradientMap: TOON_GRAD, ...o });
   const key = typeof c === 'string' ? c : c.join(',');
   let m = MATS.get(key);
-  if (!m) { m = new THREE.MeshLambertMaterial({ color: col(c) }); MATS.set(key, m); }
+  if (!m) { m = new THREE.MeshToonMaterial({ color: col(c), gradientMap: TOON_GRAD }); MATS.set(key, m); }
   return m;
 }
 
@@ -43,7 +67,7 @@ const WMATS = new Map();
 export function windMat(c, amp = 0.04, speed = 1.3) {
   const key = (typeof c === 'string' ? c : c.join(',')) + '|' + amp + '|' + speed;
   if (WMATS.has(key)) return WMATS.get(key);
-  const m = new THREE.MeshLambertMaterial({ color: col(c) });
+  const m = new THREE.MeshToonMaterial({ color: col(c), gradientMap: TOON_GRAD });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = WIND.uTime;
     sh.vertexShader = sh.vertexShader
@@ -115,6 +139,7 @@ export function makePlayer(look) {
     P(head, 'cyl', [40, 60, 70], { y: 0.3, sx: 0.5, sy: 0.04, sz: 0.5 });
     P(head, 'cone', [40, 60, 70], { y: 0.46, sx: 0.28, sy: 0.22, sz: 0.28 });
   }
+  outline(root);
   return { root, body, head, legL, legR, armL, armR };
 }
 
@@ -179,6 +204,7 @@ export function makeVillager(v) {
   if (sp === 'cat') P(body, 'cyl', fur, { y: 0.6, z: -0.42, sx: 0.035, sy: 0.6, sz: 0.035, rx: 0.9 });
   if (sp === 'mouse') P(body, 'cyl', [0, 0, 80], { y: 0.45, z: -0.42, sx: 0.015, sy: 0.7, sz: 0.015, rx: 1.3 });
   if (sp === 'bear') P(body, 'sph', belly, { y: 0.3, z: 0.34, s: 0.1 });
+  outline(root);
   return { root, body, head, legL, legR, armL, armR };
 }
 

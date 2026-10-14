@@ -23,8 +23,8 @@ export const world = { trees: [], rocks: [], houses: [], shop: null, home: null,
 
 // ---------- 季節と色 ----------
 const TERRAIN_PAL = {
-  spring: { grass: [98, 56, 60], light: [92, 64, 72], dark: [110, 50, 50], rock: [30, 14, 52], sand: [44, 60, 80], path: [34, 36, 66], under: [34, 34, 36] },
-  summer: { grass: [116, 56, 46], light: [108, 62, 58], dark: [124, 52, 38], rock: [30, 14, 50], sand: [44, 66, 82], path: [36, 38, 66], under: [34, 34, 36] },
+  spring: { grass: [96, 70, 62], light: [92, 78, 74], dark: [108, 62, 52], rock: [30, 14, 52], sand: [44, 60, 80], path: [34, 36, 66], under: [34, 34, 36] },
+  summer: { grass: [112, 68, 52], light: [104, 76, 62], dark: [122, 62, 42], rock: [30, 14, 50], sand: [44, 66, 82], path: [36, 38, 66], under: [34, 34, 36] },
   autumn: { grass: [74, 50, 52], light: [60, 60, 60], dark: [90, 42, 40], rock: [28, 16, 48], sand: [40, 58, 78], path: [34, 36, 62], under: [30, 30, 36] },
   winter: { grass: [200, 26, 90], light: [200, 30, 96], dark: [214, 26, 80], rock: [210, 10, 60], sand: [40, 26, 86], path: [36, 22, 74], under: [210, 30, 40] },
 };
@@ -107,7 +107,7 @@ function buildTerrain(sc) {
   }
   geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
   const tex = detailTexture();
-  const mat = new THREE.MeshLambertMaterial({ vertexColors: true, map: tex });
+  const mat = new THREE.MeshToonMaterial({ vertexColors: true, map: tex, gradientMap: M.TOON_GRAD });
   terrainMesh = new THREE.Mesh(geom, mat);
   terrainMesh.receiveShadow = true;
   sc.add(terrainMesh);
@@ -135,7 +135,7 @@ function recolorTerrain() {
 function buildWater(sc) {
   const geom = new THREE.PlaneGeometry(260, 260, 130, 130);
   geom.rotateX(-Math.PI / 2);
-  const mat = new THREE.MeshLambertMaterial({ color: col([204, 72, 52]), transparent: true, opacity: 0.8, depthWrite: false });
+  const mat = new THREE.MeshToonMaterial({ color: col([204, 72, 52]), gradientMap: M.TOON_GRAD, transparent: true, opacity: 0.8, depthWrite: false });
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = M.WIND.uTime;
     sh.vertexShader = sh.vertexShader
@@ -477,9 +477,9 @@ export function update(dt, time, hour, focus, inside) {
   if (inside) sun.position.set(focus.x + 10, 20, focus.z + 14);
   sun.target.position.set(sunTarget.x, sunTarget.y, sunTarget.z);
   sun.target.updateMatrixWorld();
-  sun.intensity = inside ? 0.7 : (sinA > -0.05 ? 1.1 * clamp(sinA * 2.2 + 0.2, 0, 1) : 0.22);
+  sun.intensity = inside ? 0.8 : (sinA > -0.05 ? 1.5 * clamp(sinA * 2.2 + 0.2, 0, 1) : 0.25);
   sun.color.copy(col([0, 0, 100])).lerp(sky.sun, 0.7);
-  hemi.intensity = inside ? 1.3 : lerp(0.38, 0.95, day);
+  hemi.intensity = inside ? 1.4 : lerp(0.5, 1.25, day);
   hemi.color.copy(sky.top).lerp(new THREE.Color(0xffffff), 0.5);
   hemi.groundColor.copy(sky.hz).multiplyScalar(0.55);
   skyMat.uniforms.top.value.copy(sky.top);
