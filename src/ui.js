@@ -325,6 +325,10 @@ export function showTitle(show) {
     $('btn-continue').disabled = !hasSave();
   }
 }
+// 確認ダイアログが使えない環境(埋め込み表示など)では、そのまま進める
+function safeConfirm(msg) {
+  try { return confirm(msg); } catch { return true; }
+}
 function hasSave() {
   try { return !!localStorage.getItem('hidamari-island-v1'); } catch { return false; }
 }
@@ -335,7 +339,7 @@ export const uiInput = { mx: 0, my: 0, actionCount: 0, cancel: false, rotate: fa
 export function init(onStart) {
   hooks();
   $('btn-new').onclick = () => {
-    if (hasSave() && !confirm('新しく始めると、いまのセーブデータは消えます。よろしいですか？')) return;
+    if (hasSave() && !safeConfirm('新しく始めると、いまのセーブデータは消えます。よろしいですか？')) return;
     onStart(true);
   };
   $('btn-continue').onclick = () => onStart(false);
