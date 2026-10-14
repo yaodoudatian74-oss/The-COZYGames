@@ -354,27 +354,35 @@ export function init(onStart) {
   $('btn-note').onclick = () => togglePanel('notebook');
   $('btn-menu').onclick = () => togglePanel('menu');
   $('panel-close').onclick = () => closePanel();
-  $('act').addEventListener('pointerdown', (e) => { e.preventDefault(); uiInput.actionCount += 1; });
-  $('dialog').addEventListener('pointerdown', (e) => { e.preventDefault(); uiInput.dialogTap = true; });
-  $('btn-rot').addEventListener('pointerdown', (e) => { e.preventDefault(); uiInput.rotate = true; });
-  $('btn-cancel').addEventListener('pointerdown', (e) => { e.preventDefault(); uiInput.cancel = true; });
+  // 操作ボタン: タッチは touch イベントで受ける (pointer が届かない端末があるため)。PCのマウスは pointer で受ける
+  const press = (el, fn) => {
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
+    el.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') { e.preventDefault(); fn(); } });
+  };
+  press($('act'), () => { uiInput.actionCount += 1; });
+  press($('dialog'), () => { uiInput.dialogTap = true; });
+  press($('btn-rot'), () => { uiInput.rotate = true; });
+  press($('btn-cancel'), () => { uiInput.cancel = true; });
   // バーチャルパッド
   const joy = $('joy'), knob = $('joy-knob');
-  let jid = null, cx = 0, cy = 0;
-  const jr = () => joy.getBoundingClientRect();
-  joy.addEventListener('pointerdown', (e) => { jid = e.pointerId; joy.setPointerCapture(jid); const r = jr(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; });
-  joy.addEventListener('pointermove', (e) => {
-    if (e.pointerId !== jid) return;
-    const dx = e.clientX - cx, dy = e.clientY - cy, max = jr().width / 2;
+  let jid = null;
+  const setKnob = (x, y) => {
+    const r = joy.getBoundingClientRect(), max = r.width / 2;
+    const dx = x - (r.left + max), dy = y - (r.top + max);
     const d = Math.min(max, Math.hypot(dx, dy)), a = Math.atan2(dy, dx);
     const kx = Math.cos(a) * d, ky = Math.sin(a) * d;
     knob.style.transform = `translate(${kx}px, ${ky}px)`;
     uiInput.mx = kx / max;
     uiInput.my = -ky / max;
-  });
+  };
   const endJoy = () => { jid = null; knob.style.transform = ''; uiInput.mx = 0; uiInput.my = 0; };
-  joy.addEventListener('pointerup', endJoy);
-  joy.addEventListener('pointercancel', endJoy);
+  joy.addEventListener('touchstart', (e) => { e.preventDefault(); const t = e.changedTouches[0]; jid = t.identifier; setKnob(t.clientX, t.clientY); }, { passive: false });
+  joy.addEventListener('touchmove', (e) => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === jid) setKnob(t.clientX, t.clientY); }, { passive: false });
+  joy.addEventListener('touchend', endJoy);
+  joy.addEventListener('touchcancel', endJoy);
+  joy.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; jid = e.pointerId; joy.setPointerCapture(jid); setKnob(e.clientX, e.clientY); });
+  joy.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch' || e.pointerId !== jid) return; setKnob(e.clientX, e.clientY); });
+  joy.addEventListener('pointerup', (e) => { if (e.pointerType !== 'touch') endJoy(); });
   window.addEventListener('resize', () => refreshHud());
 }
 
