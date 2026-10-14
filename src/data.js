@@ -247,7 +247,7 @@ export function describe(info) {
     case 'dish': return `材料: ${info.tags.map((t) => ({ fish: '魚', bug: '虫', veg: '野菜', fruit: '果物', grain: '穀物', herb: 'ハーブ' })[t]).join('・')}。`;
     case 'crop': return `育つまで${info.growDays}日。${info.mask.split('').map((b, i) => (b === '1' ? '春夏秋冬'[i] : '')).join('')}に育てやすい。`;
     case 'furn': return `${info.fp[0]}×${info.fp[1]}マスを使う家具。`;
-    case 'tool': return '道具。なくならないし、売ることはできない。';
+    case 'tool': return info.tool === 'shovel' ? '空の畑を消せる。畑の真ん中に立って「ならす」を押す。作物が植わっている畑は消せない。' : '道具。なくならないし、売ることはできない。';
     case 'ore': return `${info.rare >= 3 ? 'めずらしい鉱石。' : '鉱石。'}つるはしで岩をほると手に入る。`;
     case 'wood': return `木材。おので木を切ると手に入る。${info.rare >= 3 ? 'とてもめずらしい。' : ''}`;
     default: return '';

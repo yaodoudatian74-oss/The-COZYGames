@@ -336,7 +336,7 @@ function dig(x, z) {
   rt.st.plots.push({ x, z, crop: null, grow: 0, stage: 0, watered: false });
   se.dig();
   refreshPlots();
-  hooks.toast('土をたがやした');
+  hooks.toast(hasTool(TOOL.shovel) ? '土をたがやした（いらない畑は、スコップで畑の真ん中に立って「ならす」）' : '土をたがやした（スコップがあれば消せます）');
 }
 
 // ---------- 釣り ----------
@@ -562,6 +562,8 @@ export function findTarget() {
   const here = plotAt(s.pos.x, s.pos.z, 0.9);
   if (here >= 0 && hasTool(TOOL.shovel) && rt.st.plots[here].crop == null) return { label: 'ならす', act: () => levelPlot(here) };
   const pi = plotAt(f.x, f.z);
+  // 種を持っていなければ、前の空の畑はスコップで消せるように「ならす」を出す
+  if (pi >= 0 && hasTool(TOOL.shovel) && rt.st.plots[pi].crop == null && !pocketKinds().some((k) => k.startsWith('seed:'))) return { label: 'ならす', act: () => levelPlot(pi) };
   if (pi >= 0) {
     const l = plotLabel(pi);
     if (l) return { label: l, act: () => plotAct(pi) };
