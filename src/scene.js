@@ -552,7 +552,7 @@ export function placeFurniture(id, entry, cell) {
     obj.position.set(cx, Math.max(heightAt(cx, cz), 0), cz);
     outdoor.add(obj);
   } else {
-    obj.position.set(INT_OFF.x + x + w / 2, 0, INT_OFF.z + z + d / 2);
+    obj.position.set(x + w / 2, 0, z + d / 2); // 部屋は interior 側でずれているので、ここは部屋の中の座標
     interior.add(obj);
   }
   obj.rotation.y = -rot * Math.PI / 2;
@@ -580,7 +580,7 @@ export function setGhost(key, cell, valid, outdoorMode = false) {
     const cx = cell.x + w / 2, cz = cell.z + d / 2;
     ghost.position.set(cx, Math.max(heightAt(cx, cz), 0), cz);
   } else {
-    ghost.position.set(INT_OFF.x + cell.x + w / 2, 0, INT_OFF.z + cell.z + d / 2);
+    ghost.position.set(cell.x + w / 2, 0, cell.z + d / 2);
   }
   ghost.rotation.y = -cell.rot * Math.PI / 2;
   ghost.traverse((o) => { if (o.isMesh) o.material.color.setRGB(1, valid ? 1 : 0.4, valid ? 1 : 0.4); });
