@@ -17,7 +17,7 @@ const FIXED_CELLS = [[1, 1], [2, 1], [10, 1]]; // ベッド2マス・かまど
 
 // 画面側が差し替える通知先
 export const hooks = {
-  toast: () => {}, say: () => {}, open: () => {}, prompt: () => {}, bite: () => {}, refresh: () => {},
+  toast: () => {}, say: () => {}, open: () => {}, prompt: () => {}, bite: () => {}, refresh: () => {}, saved: () => {},
 };
 
 export const rt = {
@@ -535,7 +535,9 @@ function nextDay() {
 }
 
 function persist() {
+  if (!rt.st) return;
   writeSave({ v: 1, state: rt.st });
+  hooks.saved();
 }
 
 // ---------- 移動 ----------
@@ -648,7 +650,7 @@ export function update(dt, input, camYaw) {
   animateChar(pl, mag > 0.05 && !rt.fishing, performance.now() / 1000);
   // 自動保存
   rt.autosaveT += dt;
-  if (rt.autosaveT > 25) { rt.autosaveT = 0; persist(); }
+  if (rt.autosaveT > 20) { rt.autosaveT = 0; persist(); }
   // 操作表示
   const tg = findTarget();
   const label = tg ? tg.label : null;

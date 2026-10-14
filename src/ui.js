@@ -371,11 +371,18 @@ export function init(onStart) {
   window.addEventListener('resize', () => refreshHud());
 }
 
+let saveTimer = null;
 function hooks() {
   G.hooks.toast = toast;
   G.hooks.say = say;
   G.hooks.open = (kind) => { if (kind === 'shop') openPanel('shop'); else if (kind === 'cook') openPanel('cook'); else openPanel(kind); };
   G.hooks.prompt = setPrompt;
   G.hooks.bite = setBite;
+  G.hooks.saved = () => {
+    const el = $('save-note');
+    el.classList.remove('hidden');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => el.classList.add('hidden'), 1600);
+  };
   G.hooks.refresh = () => { refreshHud(); if (panelKind) renderPanel(); };
 }

@@ -145,6 +145,10 @@ function frame(now) {
   }
 }
 window.addEventListener('resize', () => S.resize());
+// タブを閉じる・切り替える時にも保存する
+const saveNow = () => { if (started) G.saveNow(); };
+window.addEventListener('pagehide', saveNow);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 requestAnimationFrame(frame);
 
 // テスト用の窓口 (QAスクリプトから状態を読む)
