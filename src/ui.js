@@ -168,9 +168,9 @@ function renderPanel() {
   const body = $('panel-body');
   const scroll = body.scrollTop;
   body.replaceChildren();
-  const titles = { pocket: 'ポーチ', notebook: 'ひだまりノート', shop: 'モコのお店', cook: 'りょうり', menu: 'メニュー' };
+  const titles = { pocket: 'ポーチ', notebook: 'ひだまりノート', shop: 'モコのお店', cook: 'りょうり', menu: 'メニュー', build: '家具配置' };
   $('panel-title').textContent = titles[panelKind] || '';
-  ({ pocket: pocketPanel, notebook: notebookPanel, shop: shopPanel, cook: cookPanel, menu: menuPanel })[panelKind](body);
+  ({ pocket: pocketPanel, notebook: notebookPanel, shop: shopPanel, cook: cookPanel, menu: menuPanel, build: buildPanel })[panelKind](body);
   body.scrollTop = scroll;
 }
 
@@ -306,6 +306,22 @@ function cookPanel(body) {
   body.append(grid);
 }
 
+// 家具配置モード: ポーチの家具を選ぶと、すぐ配置が始まる
+function buildPanel(body) {
+  const keys = G.pocketKinds().filter((k) => k.startsWith('furn:'));
+  body.append(h('div', { class: 'note' }, '置きたい家具を選ぶと、配置が始まります。外でも家の中でも置けます。'));
+  if (!keys.length) {
+    body.append(h('div', { class: 'empty' }, 'ポーチに家具がありません。モコのお店で買えます。'));
+    return;
+  }
+  const grid = h('div', { class: 'grid' });
+  for (const k of keys) {
+    grid.append(h('button', { class: 'card', onclick: () => { closePanel(); G.startPlacing(k); } },
+      thumb(k), h('div', { class: 'name' }, infoOf(k).name), h('div', { class: 'cnt' }, `x${G.countOf(k)}`)));
+  }
+  body.append(grid);
+}
+
 function menuPanel(body) {
   body.append(
     h('div', { class: 'note' }, `${G.dateText()}　・　${G.rt.st.money.toLocaleString('ja-JP')} コイン`),
@@ -353,6 +369,7 @@ export function init(onStart) {
   $('btn-pocket').onclick = () => togglePanel('pocket');
   $('btn-note').onclick = () => togglePanel('notebook');
   $('btn-menu').onclick = () => togglePanel('menu');
+  $('btn-build').onclick = () => { if (!panelKind) openPanel('build'); };
   $('panel-close').onclick = () => closePanel();
   // 操作ボタン: タッチは touch イベントで受ける (pointer が届かない端末があるため)。PCのマウスは pointer で受ける
   const press = (el, fn) => {

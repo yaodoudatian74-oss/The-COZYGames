@@ -244,7 +244,7 @@ function roomCellsOK(cells, occ) {
 
 export function startPlacing(key) {
   rt.placing = { key, rot: 0 };
-  hooks.toast('Spaceでおく・Rでまわす・Escでやめる');
+  hooks.toast('右下の「おく」で置けます（まわす・やめる も使えます）');
   hooks.refresh();
 }
 function placingCell() {
