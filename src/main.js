@@ -17,7 +17,7 @@ const keys = new Set();
 // 決定操作は押した回数を数える (低速な端末でも押し損ねないように)
 let pendingActions = 0;
 let keyRotate = false, keyCancel = false, keyPocket = false, keyNote = false, keyMenu = false;
-let started = false, last = performance.now(), clock = 0, hudT = 0;
+let started = false, last = performance.now(), clock = 0, hudT = 0, wasPlacing = false;
 
 // ---------- キーボード ----------
 const GAME_KEYS = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'space'];
@@ -114,6 +114,9 @@ function frame(now) {
 
     G.update(dt, { mx, my, run }, cam.yaw);
     audioTick(dt, G.isDay(), G.curSeason());
+    // 家具の配置を始めたら、カメラをプレイヤーの後ろ側に向ける (置く場所が見えるように)
+    if (G.rt.placing && !wasPlacing) cam.yaw = st.pos.ry + Math.PI;
+    wasPlacing = !!G.rt.placing;
 
     // カメラ: 室内に入ったら部屋の正面側へ向けなおす
     if (st.inside !== cam.wasInside) {
