@@ -52,13 +52,25 @@ const FURN_COLORS_B = [
   ['ベージュ', [35, 35, 80]], ['アイボリー', [44, 45, 94]], ['ミルク', [40, 20, 96]], ['モカ', [28, 30, 50]],
   ['チョコ', [18, 40, 22]], ['グラファイト', [215, 15, 30]], ['アクア', [185, 65, 62]], ['ゴールド', [45, 80, 55]],
 ];
-const FURN_COLORS = [...FURN_COLORS_A, ...FURN_COLORS_B];
+const FURN_COLORS_BASE = [...FURN_COLORS_A, ...FURN_COLORS_B];
+// 色合いの変化 (名前の前につく言葉と、彩度・明るさの変化)
+const FURN_MODS = [
+  ['うすい', -8, 18], ['こい', 15, -12], ['くすんだ', -25, 0], ['あかるい', 0, 10],
+  ['ふかい', 5, -18], ['つやつやの', 12, 4], ['くもりの', -12, -6], ['きらめく', 22, 8],
+];
+// 25色 × 8色合い = 200色
+const FURN_COLORS = [];
+for (const [mn, ds, dl] of FURN_MODS) {
+  for (const [cn, hsl] of FURN_COLORS_BASE.slice(0, 25)) {
+    FURN_COLORS.push([mn + cn, [hsl[0], Math.min(100, Math.max(0, hsl[1] + ds)), Math.min(96, Math.max(8, hsl[2] + dl))]]);
+  }
+}
 export const FURN_C = FURN_COLORS.length; // 色の数 (家具の番号計算に使う)
 export const FURNITURE = [];
 FURN_KINDS.forEach(([kn, fp, price], ki) => FURN_COLORS.forEach(([cn, hsl], ci) => {
   FURNITURE.push({
     cat: 'furn', id: `furn:${FURNITURE.length}`, name: `${cn}色の${kn}`, kind: ki, color: hsl,
-    fp, price: Math.round(price * (0.9 + ci * 0.02)),
+    fp, price: Math.round(price * (0.9 + (ci % 25) * 0.02) * (1 + Math.floor(ci / 25) * 0.05)),
   });
 }));
 

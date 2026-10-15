@@ -174,6 +174,21 @@ function renderPanel() {
   body.scrollTop = scroll;
 }
 
+// 多いものは 240 件ずつ表示する (スマホで重くならないように)
+function pagedGrid(items, render, page = 240) {
+  const grid = h('div', { class: 'grid' });
+  const more = h('button', { class: 'btn wide', onclick: () => add() }, 'もっと見る');
+  let shown = 0;
+  function add() {
+    const end = Math.min(items.length, shown + page);
+    for (let i = shown; i < end; i++) grid.append(render(items[i]));
+    shown = end;
+    more.style.display = shown >= items.length ? 'none' : '';
+  }
+  add();
+  return h('div', {}, grid, more);
+}
+
 function pocketPanel(body) {
   const s = G.rt.st;
   const keys = G.pocketKinds();
@@ -214,12 +229,11 @@ function notebookPanel(body) {
   const got = list.filter((x) => G.rt.st.disc[x.id]).length;
   body.append(h('div', { class: 'note' }, `${label}の図鑑　${got} / ${list.length}`));
   const grid = h('div', { class: 'grid' });
-  for (const x of list) {
+  body.append(pagedGrid(list, (x) => {
     const known = !!G.rt.st.disc[x.id];
-    grid.append(h('button', { class: 'card' + (panelData === x.id ? ' sel' : ''), onclick: () => { panelData = x.id; renderPanel(); } },
-      known ? thumb(x.id) : h('div', { class: 'unknown' }, '？'), h('div', { class: 'name' }, known ? x.name : '？？？')));
-  }
-  body.append(grid);
+    return h('button', { class: 'card' + (panelData === x.id ? ' sel' : ''), onclick: () => { panelData = x.id; renderPanel(); } },
+      known ? thumb(x.id) : h('div', { class: 'unknown' }, '？'), h('div', { class: 'name' }, known ? x.name : '？？？'));
+  }));
   if (panelData && G.rt.st.disc[panelData]) {
     const info = infoOf(panelData);
     body.append(h('div', { class: 'actions' },
@@ -275,11 +289,12 @@ function shopPanel(body) {
     // 各作物の基本品種 (20種) のたね
     const seeds = CROPS.filter((_, i) => i % CROP_V === 0).map((c) => `seed:${c.kind * CROP_V}`);
     const list = [...TOOLS.map((t) => t.id), ...seeds, ...FURNITURE.map((f) => f.id)];
-    for (const k of list) {
+    body.append(pagedGrid(list, (k) => {
       const info = infoOf(k);
-      grid.append(h('button', { class: 'card', onclick: () => G.buy(k) }, thumb(k), h('div', { class: 'name' }, info.name),
-        h('div', { class: 'cnt' }, `${info.price} コイン`)));
-    }
+      return h('button', { class: 'card', onclick: () => G.buy(k) }, thumb(k), h('div', { class: 'name' }, info.name),
+        h('div', { class: 'cnt' }, `${info.price} コイン`));
+    }));
+    return;
   }
   body.append(grid);
 }

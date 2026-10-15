@@ -2,7 +2,7 @@
 import * as D from '../src/data.js';
 
 const lists = { 家具: D.FURNITURE, 魚: D.FISH, 虫: D.BUGS, 料理: D.DISHES, 農作物: D.CROPS, 鉱石: D.ORES, 木材: D.WOODS };
-const expect = { 家具: 1200, 魚: 1000, 虫: 1000, 料理: 1000, 農作物: 1000, 鉱石: 400, 木材: 400 };
+const expect = { 家具: 5000, 魚: 1000, 虫: 1000, 料理: 1000, 農作物: 1000, 鉱石: 400, 木材: 400 };
 let ok = true;
 for (const [name, list] of Object.entries(lists)) {
   const ids = new Set(list.map((x) => x.id));
