@@ -1,0 +1,7 @@
+{
+  "appId": "com.hidamari.island",
+  "appName": "ひだまり島",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "backgroundColor": "#9fd8ff", "allowMixedContent": false }
+}
