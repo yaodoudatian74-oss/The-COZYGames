@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { rngFrom, TAU } from './util.js';
 import { infoOf, CROPS, BUG_WINGS } from './data.js';
+import { PARTS } from './furniture-gen.js';
 
 export const WIND = { uTime: { value: 0 } };
 // あつ森風のセル調: 光が当たる所を3段階でくっきり分ける
@@ -438,7 +439,105 @@ const FURN = [
   },
 ];
 
+// 部品の組み合わせから作る家具 (脚・本体・天板・飾り)
+function genFurnitureModel(info) {
+  const g = new THREE.Group();
+  const { legs, body, top, decor, size } = info.gen;
+  const c = info.color, a = info.accent;
+  const sz = PARTS.size[size];
+  const W = 0.9 * sz.w, D = 0.85, H = 1.3 * sz.h;
+  const lh = legs === 7 ? 0 : legs === 4 ? 0.12 : 0.34;
+  const tt = top === 4 ? 0 : 0.08;
+  const bh = H - lh - tt;
+  const wood = [26, 42, 48];
+  // 脚
+  if (legs === 0 || legs === 5) {
+    const r = legs === 5 ? 0.03 : 0.05;
+    for (const x of [-1, 1]) for (const z of [-1, 1]) P(g, 'cyl', wood, { x: x * (W / 2 - 0.08), y: lh / 2, z: z * (D / 2 - 0.08), sx: r, sy: lh, sz: r });
+  } else if (legs === 1) {
+    P(g, 'cyl', wood, { y: lh / 2, sx: 0.12, sy: lh, sz: 0.12 });
+    P(g, 'cyl', wood, { y: 0.02, sx: 0.35, sy: 0.04, sz: 0.35 });
+  } else if (legs === 2) {
+    for (const z of [-1, 1]) P(g, 'box', wood, { z: z * (D / 2 - 0.08), y: 0.05, sx: W * 0.9, sy: 0.1, sz: 0.06 });
+  } else if (legs === 3) {
+    for (const x of [-1, 1]) for (const z of [-1, 1]) P(g, 'box', wood, { x: x * (W / 2 - 0.08), y: lh / 2, z: z * (D / 2 - 0.08), sx: 0.1, sy: lh, sz: 0.1 });
+  } else if (legs === 4) {
+    P(g, 'box', wood, { y: lh / 2, sx: W * 0.6, sy: lh, sz: D * 0.6 });
+  } else if (legs === 6) {
+    P(g, 'box', wood, { y: lh / 2, sx: W * 0.95, sy: lh, sz: D * 0.95 });
+  }
+  // 本体 (脚の上から)
+  const y0 = lh;
+  const mid = y0 + bh / 2;
+  if (body === 0) {
+    P(g, 'box', c, { y: mid, sx: W, sy: bh, sz: D });
+  } else if (body === 1) {
+    P(g, 'box', c, { y: mid, sx: W, sy: bh, sz: D });
+    for (let i = 0; i < 3; i++) {
+      const fy = y0 + bh * (0.2 + i * 0.3);
+      P(g, 'box', a, { y: fy, z: D / 2 + 0.01, sx: W * 0.9, sy: bh * 0.24, sz: 0.03 });
+      P(g, 'sph', wood, { y: fy, z: D / 2 + 0.05, s: 0.03 });
+    }
+  } else if (body === 2) {
+    P(g, 'box', wood, { y: mid, z: -D / 2 + 0.03, sx: W, sy: bh, sz: 0.05 });
+    for (const x of [-1, 1]) P(g, 'box', wood, { x: x * W / 2, y: mid, sx: 0.05, sy: bh, sz: D });
+    for (let i = 0; i < 3; i++) {
+      const sy = y0 + bh * (i / 2.4) + 0.02;
+      P(g, 'box', wood, { y: sy, sx: W, sy: 0.04, sz: D });
+      for (let k = 0; k < 4; k++) P(g, 'box', k % 2 ? a : c, { x: -W * 0.3 + k * W * 0.2, y: sy + 0.1, z: 0, sx: 0.08, sy: 0.18, sz: 0.5 });
+    }
+  } else if (body === 3) {
+    P(g, 'cyl', c, { y: mid, sx: Math.min(W, D) / 2, sy: bh, sz: Math.min(W, D) / 2 });
+  } else if (body === 4) {
+    P(g, 'sph', c, { y: mid, sx: W / 2, sy: bh / 2, sz: D / 2 });
+  } else if (body === 5) {
+    P(g, 'box', c, { y: y0 + bh * 0.3, sx: W, sy: bh * 0.6, sz: D });
+    P(g, 'cyl', c, { y: y0 + bh * 0.6, z: 0, sx: W / 2, sy: D, sz: W / 2, rx: Math.PI / 2 });
+  } else if (body === 6) {
+    P(g, 'box', c, { y: mid, sx: W, sy: bh, sz: D });
+    for (const x of [-1, 1]) {
+      P(g, 'box', a, { x: x * W / 4, y: mid, z: D / 2 + 0.01, sx: W * 0.46, sy: bh * 0.9, sz: 0.03 });
+      P(g, 'sph', wood, { x: x * 0.08, y: mid, z: D / 2 + 0.05, s: 0.03 });
+    }
+  } else {
+    for (const x of [-1, 1]) for (const z of [-1, 1]) P(g, 'box', wood, { x: x * (W / 2 - 0.04), y: mid, z: z * (D / 2 - 0.04), sx: 0.06, sy: bh, sz: 0.06 });
+    P(g, 'box', c, { y: mid, z: -D / 2 + 0.03, sx: W, sy: bh, sz: 0.04 });
+  }
+  // 天板
+  const ty = y0 + bh;
+  if (top === 0) P(g, 'box', c, { y: ty + tt / 2, sx: W * 1.02, sy: tt, sz: D * 1.02 });
+  else if (top === 1) P(g, 'cyl', c, { y: ty + tt / 2, sx: Math.min(W, D) / 2, sy: tt, sz: Math.min(W, D) / 2 });
+  else if (top === 2) P(g, 'sph', a, { y: ty + 0.06, sx: W * 0.45, sy: 0.1, sz: D * 0.45 });
+  else if (top === 3) {
+    P(g, 'box', c, { y: ty + tt / 2, sx: W * 0.8, sy: tt, sz: D * 0.8 });
+    P(g, 'box', c, { y: ty + tt * 1.5, sx: W * 0.55, sy: tt, sz: D * 0.55 });
+  } else if (top === 5) P(g, 'cone', a, { y: ty + 0.17, sx: W * 0.6, sy: 0.35, sz: W * 0.6 });
+  // 飾り
+  const dy = top === 4 ? ty : ty + tt;
+  if (decor === 1) {
+    for (const x of [-1, 1]) P(g, 'sph', wood, { x: x * W * 0.22, y: y0 + bh * 0.6, z: D / 2 + 0.03, s: 0.035 });
+  } else if (decor === 2) {
+    P(g, 'cyl', [18, 55, 52], { y: dy + 0.1, sx: 0.12, sy: 0.18, sz: 0.12 });
+    P(g, 'sph', [116, 55, 44], { y: dy + 0.32, s: 0.16 });
+  } else if (decor === 3) {
+    P(g, 'cyl', wood, { y: dy + 0.2, sx: 0.02, sy: 0.4, sz: 0.02 });
+    P(g, 'cone', a, { y: dy + 0.5, sx: 0.15, sy: 0.18, sz: 0.15 });
+  } else if (decor === 4) {
+    for (let i = 0; i < 3; i++) P(g, 'box', i % 2 ? a : c, { x: (i - 1) * 0.15, y: dy + 0.08 + (i % 2) * 0.05, sx: 0.12, sy: 0.14, sz: 0.2 });
+  } else if (decor === 5) {
+    P(g, 'sph', a, { x: 0.12, y: dy + 0.07, z: 0.08, sx: 0.14, sy: 0.07, sz: 0.14 });
+  } else if (decor === 6) {
+    P(g, 'cyl', [200, 40, 80], { y: dy + 0.15, sx: 0.07, sy: 0.3, sz: 0.07 });
+    P(g, 'sph', [340, 70, 70], { x: 0.05, y: dy + 0.36, s: 0.05 });
+  } else if (decor === 7) {
+    P(g, 'box', wood, { y: y0 + bh * 0.55, z: D / 2 + 0.02, sx: W * 0.7, sy: bh * 0.6, sz: 0.04 });
+    P(g, 'box', [200, 30, 88], { y: y0 + bh * 0.55, z: D / 2 + 0.05, sx: W * 0.6, sy: bh * 0.5, sz: 0.02 });
+  }
+  return g;
+}
+
 export function furnitureModel(info) {
+  if (info.gen) return genFurnitureModel(info);
   const g = new THREE.Group();
   const c = info.color;
   const a = [(c[0] + 150) % 360, 60, 62];

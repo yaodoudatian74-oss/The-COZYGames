@@ -74,6 +74,10 @@ FURN_KINDS.forEach(([kn, fp, price], ki) => FURN_COLORS.forEach(([cn, hsl], ci) 
   });
 }));
 
+// 部品の組み合わせで作る新しい家具 (5000種)
+import { genFurniture } from './furniture-gen.js';
+FURNITURE.push(...genFurniture(5000, FURNITURE.length, FURN_COLORS_BASE));
+
 // ───────── 魚 400 ─────────
 // [名前, 生息地(river/pond/sea), 季節マスク, 時間(d=昼 n=夜 a=いつでも), 基本価格]
 const FISH_SP = [
