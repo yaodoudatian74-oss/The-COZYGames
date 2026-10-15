@@ -27,7 +27,7 @@ function takeDown(kind, i) {
   buildObstacles();
 }
 
-export const DAY_SEC = 240; // 実時間240秒 = ゲーム内1日
+export const DAY_SEC = 3600; // 実時間1時間 = ゲーム内1日
 export const POCKET_MAX = 60;
 const SEASON_KEYS = ['spring', 'summer', 'autumn', 'winter'];
 const OFF = S.INT_OFF, ROOM = S.ROOM;
