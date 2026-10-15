@@ -8,6 +8,7 @@ import {
 import { rngFrom, clamp, lerp, vnoise } from './util.js';
 import { col } from './models.js';
 import { CROPS } from './data.js';
+import { createWeather } from './weather.js';
 
 export const INT_OFF = { x: 400, z: 400 }; // 室内は島から遠く離れた場所に作る
 export const ROOM = { w: 12, d: 8 };
@@ -92,6 +93,7 @@ const clouds = [], shardMeshes = [];
 const state = { lighthouseOn: false };
 let season = 'spring';
 let ghost = null;
+let weatherFx = null, weatherKind = 'sun', blobMesh = null;
 
 function buildTerrain(sc) {
   const geom = new THREE.PlaneGeometry(HALF * 2, HALF * 2, HALF * 2, HALF * 2);
@@ -189,6 +191,28 @@ function buildScatter(sc) {
     sc.add(g);
     world.rocks.push({ x: r.x, z: r.z, obj: g, hp: 3 });
   }
+  // 木の根元の接地影 (やわらかい丸い影で、木が地面に乗って見える)
+  const bc = document.createElement('canvas');
+  bc.width = bc.height = 64;
+  const bg = bc.getContext('2d');
+  const bgr = bg.createRadialGradient(32, 32, 2, 32, 32, 32);
+  bgr.addColorStop(0, 'rgba(20,30,10,0.55)'); bgr.addColorStop(0.6, 'rgba(20,30,10,0.25)'); bgr.addColorStop(1, 'rgba(20,30,10,0)');
+  bg.fillStyle = bgr; bg.fillRect(0, 0, 64, 64);
+  const blobGeo = new THREE.PlaneGeometry(1, 1);
+  blobGeo.rotateX(-Math.PI / 2);
+  const blobMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  blobMesh = new THREE.InstancedMesh(blobGeo, blobMat, S.trees.length);
+  const bm = new THREE.Object3D();
+  S.trees.forEach((t, i) => {
+    bm.position.set(t.x, heightAt(t.x, t.z) + 0.04, t.z);
+    bm.rotation.set(0, 0, 0);
+    bm.scale.setScalar(t.s * (t.kind === 'pine' ? 1.1 : 1.7));
+    bm.updateMatrix();
+    blobMesh.setMatrixAt(i, bm.matrix);
+  });
+  blobMesh.castShadow = false;
+  blobMesh.receiveShadow = false;
+  sc.add(blobMesh);
   // 草: 細長い三角形を大量にインスタンス化
   // 葉: 根元が広く、先がすぼまる湾曲した形 (5頂点・3段)
   const blade = new THREE.BufferGeometry();
@@ -481,6 +505,7 @@ export function init(canvas) {
   scene.fog = new THREE.Fog(0xffffff, 90, 230);
   buildSky(scene);
   buildLights(scene);
+  weatherFx = createWeather(outdoor);
   buildTerrain(outdoor);
   buildWater(outdoor);
   buildScatter(outdoor);
@@ -501,6 +526,12 @@ export function setSeason(s) {
   season = s;
   M.setSeasonColors(s);
   if (terrainMesh) { recolorTerrain(); recolorPlants(); }
+  if (weatherFx) weatherFx.set(weatherKind, ['spring', 'summer', 'autumn', 'winter'].indexOf(s));
+}
+// 天気を変える (game.js が毎朝決める)
+export function setWeather(kind) {
+  weatherKind = kind;
+  if (weatherFx) weatherFx.set(kind, ['spring', 'summer', 'autumn', 'winter'].indexOf(season));
 }
 
 // ---------- 毎フレーム更新 ----------
@@ -520,9 +551,10 @@ export function update(dt, time, hour, focus, inside) {
   if (inside) sun.position.set(focus.x + 10, 20, focus.z + 14);
   sun.target.position.set(sunTarget.x, sunTarget.y, sunTarget.z);
   sun.target.updateMatrixWorld();
-  sun.intensity = inside ? 0.8 : (sinA > -0.05 ? 1.5 * clamp(sinA * 2.2 + 0.2, 0, 1) : 0.25);
+  sun.intensity = (inside ? 0.8 : (sinA > -0.05 ? 1.5 * clamp(sinA * 2.2 + 0.2, 0, 1) : 0.25)) * (weatherKind === 'sun' ? 1 : 0.45);
   sun.color.copy(col([0, 0, 100])).lerp(sky.sun, 0.7);
-  hemi.intensity = inside ? 1.4 : lerp(0.5, 1.25, day);
+  const wet = weatherKind === 'rain' || weatherKind === 'snow' ? 0.72 : weatherKind === 'cloud' || weatherKind === 'fog' ? 0.85 : 1;
+  hemi.intensity = (inside ? 1.4 : lerp(0.5, 1.25, day)) * wet;
   hemi.color.copy(sky.top).lerp(new THREE.Color(0xffffff), 0.5);
   hemi.groundColor.copy(sky.hz).multiplyScalar(0.55);
   skyMat.uniforms.top.value.copy(sky.top);
@@ -546,6 +578,7 @@ export function update(dt, time, hour, focus, inside) {
     if (g && g.visible) { g.rotation.y += dt * 1.2; g.position.y += Math.sin(time * 2 + c) * 0.002; }
   });
   dome.position.copy(focus);
+  if (weatherFx && !inside) weatherFx.update(dt, focus, time, night, season === 'summer');
   renderer.render(scene, camera);
 }
 

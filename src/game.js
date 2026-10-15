@@ -8,6 +8,7 @@ import * as T from './terrain.js';
 import * as S from './scene.js';
 import { makePlayer, makeVillager, animateChar } from './models.js';
 import { se } from './audio.js';
+import { WEATHER_NAMES } from './weather.js';
 
 // 鉱石・木材を重み付きで選ぶ (レアなほど出にくい)
 function pickWeighted(list) {
@@ -45,7 +46,7 @@ export const rt = {
 export function newState() {
   return {
     day: 1, hour: 6, money: 500, pocket: { [TOOL.rod]: 1, [TOOL.net]: 1, [TOOL.knife]: 1, [TOOL.pick]: 1, [TOOL.axe]: 1, [TOOL.shovel]: 1 }, disc: {},
-    gone: { trees: {}, rocks: {} }, stats: { fish: 0, bugs: 0, cooked: 0, crops: 0, sold: 0 },
+    gone: { trees: {}, rocks: {} }, weather: 'sun', stats: { fish: 0, bugs: 0, cooked: 0, crops: 0, sold: 0 },
     chapter: 0, shardReady: [false, false, false, false], shardTaken: [false, false, false, false],
     plots: [], house: [], outdoorFurn: [], friend: {}, talked: {}, pos: { x: -20, z: 23, ry: 0 }, inside: false, lighthouseOn: false,
   };
@@ -641,13 +642,21 @@ function nextDay() {
     p.stage = p.grow >= c.growDays ? 4 : Math.min(3, Math.floor((p.grow / c.growDays) * 4));
   }
   refreshPlots();
+  // 雨・雪の日は、畑に自動で水がまかれる (次の朝から育つ)
+  const roll = Math.random();
+  const season = seasonOf(s.day);
+  s.weather = season === 3 ? (roll < 0.5 ? 'snow' : roll < 0.7 ? 'cloud' : 'sun') : roll < 0.55 ? 'sun' : roll < 0.75 ? 'cloud' : roll < 0.92 ? 'rain' : 'fog';
+  S.setWeather(s.weather);
+  if (s.weather === 'rain' || s.weather === 'snow') for (const p of s.plots) if (p.crop != null) p.watered = true;
   const ns = seasonOf(s.day);
+  const wx = `今日は${WEATHER_NAMES[s.weather]}` + (s.weather === 'rain' || s.weather === 'snow' ? '。畑に水がまかれます' : '');
   if (ns !== prevSeason) {
     S.setSeason(SEASON_KEYS[ns]);
     hooks.toast(`${SEASON_NAMES[ns]}になりました`);
   } else {
     hooks.toast(`${dateText()}の朝`);
   }
+  hooks.toast(wx);
   rt.bugs.forEach((b) => S.removeVisual(b.obj));
   rt.bugs = [];
   // 岩と木を戻す (消してから2日経ったもの)
@@ -736,6 +745,7 @@ export function start(fresh) {
   rt.st.shardReady.forEach((ready, c) => { if (ready && !rt.st.shardTaken[c]) S.setShardVisible(c, true); });
   if (rt.st.lighthouseOn) S.setLighthouse(true);
   S.setSeason(SEASON_KEYS[seasonOf(rt.st.day)]);
+  S.setWeather(rt.st.weather || 'sun');
   refreshPlots();
   OCC = occupancy();
   rt.frame = 0;
