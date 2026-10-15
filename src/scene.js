@@ -7,7 +7,7 @@ import {
 } from './terrain.js';
 import { rngFrom, clamp, lerp, vnoise } from './util.js';
 import { col } from './models.js';
-import { CROPS } from './data.js';
+import { CROPS, FURN_C } from './data.js';
 import { createWeather } from './weather.js';
 
 export const INT_OFF = { x: 400, z: 400 }; // 室内は島から遠く離れた場所に作る
@@ -430,7 +430,7 @@ function buildInterior() {
   const stove = M.stoveModel();
   stove.position.set(10.5, 0, 1.5);
   interior.add(stove);
-  const rug = M.itemModel('furn:' + (9 * 20 + 9));
+  const rug = M.itemModel('furn:' + (9 * FURN_C + 9));
   rug.position.set(5, 0, 4);
   interior.add(rug);
   interiorFixed = [{ kind: 'bed', x: 1.5, z: 1.5 }, { kind: 'stove', x: 10.5, z: 1.5 }];

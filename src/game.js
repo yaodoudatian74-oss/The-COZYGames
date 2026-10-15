@@ -1,6 +1,6 @@
 // ゲームの進行とシステム: 時間・移動・釣り・虫取り・畑・料理・店・家具配置・住民・物語・保存
 import {
-  CHAPTERS, SHARD_NAMES, VILLAGERS, FISH, BUGS, DISHES, CROPS, FURNITURE, SEASON_NAMES, BUG_WINGS, TOOL, ORES, WOODS,
+  CHAPTERS, SHARD_NAMES, VILLAGERS, FISH, BUGS, DISHES, CROPS, FURNITURE, SEASON_NAMES, BUG_WINGS, TOOL, ORES, WOODS, BUG_V, CROP_V,
   seasonOf, yearOf, dayInSeason, inSeason, infoOf, tagsOf,
 } from './data.js';
 import { loadSave, writeSave, clamp, angleLerp } from './util.js';
@@ -175,7 +175,7 @@ function takeShard(c) {
   s.shardTaken[c] = true;
   s.shardReady[c] = true;
   S.setShardVisible(c, false);
-  addItem('seed:' + (c * 20), 1, true); // 記念の種 (かけらのお礼)
+  addItem('seed:' + (c * CROP_V), 1, true); // 記念の種 (かけらのお礼)
   s.money += 300;
   s.chapter = c + 1;
   if (c === 3) {
@@ -399,7 +399,7 @@ function spawnBug() {
   const s = rt.st, p = s.pos, day = isDay();
   const eligible = [];
   for (let si = 0; si < 25; si++) {
-    const ref = BUGS[si * 16];
+    const ref = BUGS[si * BUG_V];
     if (bugOk(ref, day)) eligible.push(si);
   }
   if (!eligible.length) return;
@@ -409,13 +409,13 @@ function spawnBug() {
     if (!T.walkable(x, z) || (T.waterKindAt(x, z) && Math.random() < 0.9)) continue;
     const near = (kind) => (kind === 'water' ? T.waterKindAt(x, z) != null : S.world.trees.some((t) => Math.hypot(t.x - x, t.z - z) < 4));
     const hab = near('water') ? 'water' : near('tree') ? 'tree' : Math.random() < 0.5 ? 'flower' : 'ground';
-    let pool = eligible.filter((si) => BUGS[si * 16].habitat === hab);
+    let pool = eligible.filter((si) => BUGS[si * BUG_V].habitat === hab);
     if (!pool.length) pool = eligible;
     const si = pool[Math.floor(Math.random() * pool.length)];
-    const ci = Math.floor(Math.random() * 16);
-    const key = `bug:${si * 16 + ci}`;
+    const ci = Math.floor(Math.random() * BUG_V);
+    const key = `bug:${si * BUG_V + ci}`;
     const obj = S.spawnVisual(key, x, z);
-    rt.bugs.push({ key, info: BUGS[si * 16 + ci], obj, x, z, tx: x, tz: z, wait: 1, flee: 0 });
+    rt.bugs.push({ key, info: BUGS[si * BUG_V + ci], obj, x, z, tx: x, tz: z, wait: 1, flee: 0 });
     return;
   }
 }
